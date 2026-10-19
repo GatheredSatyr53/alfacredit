@@ -1,0 +1,50 @@
+# Коллекция запросов для VS Code REST Client и JetBrains Rider / IDEA HTTP Client.
+# Запуск через docker compose: baseUrl = http://localhost:8080, через dotnet run: http://localhost:5080
+
+@baseUrl = http://localhost:8080
+@login = manager
+@password = Demo123!
+
+### Liveness: процесс жив
+GET {{baseUrl}}/health/live
+
+### Readiness: база отвечает
+GET {{baseUrl}}/health/ready
+
+### OpenAPI-документ
+GET {{baseUrl}}/swagger/v1/swagger.json
+
+### Вход и получение JWT
+# @name login
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "login": "{{login}}",
+  "password": "{{password}}"
+}
+
+> {%
+  // JetBrains HTTP Client: сохранить токен для следующих запросов
+  client.global.set("token", response.body.accessToken);
+%}
+
+### Профиль текущего пользователя (VS Code REST Client подставит токен из ответа login)
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+### Профиль текущего пользователя (вариант для JetBrains HTTP Client)
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{token}}
+
+### Неверный пароль: 401 в формате ProblemDetails
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "login": "client_good",
+  "password": "wrong-password"
+}
+
+### Без токена: 401
+GET {{baseUrl}}/api/v1/auth/me

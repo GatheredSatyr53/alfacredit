@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Домен и сценарии. Не зависит от EF Core, ASP.NET Core и других инфраструктурных библиотек -->
+
+</Project>
