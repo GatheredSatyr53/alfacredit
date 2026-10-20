@@ -24,6 +24,8 @@ internal static class TestData
             "Иванова Мария Сергеевна",
             TaxRegime.Osno,
             annualRevenue,
+            40_800_000,
+            7_200_000,
             150_000,
             24,
             Now);

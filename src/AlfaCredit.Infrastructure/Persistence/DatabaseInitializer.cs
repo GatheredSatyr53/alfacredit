@@ -1,6 +1,8 @@
 using System.Net.Sockets;
 using AlfaCredit.Infrastructure.Persistence.Seeding;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -23,12 +25,31 @@ public static class DatabaseInitializer
         if (options.MigrateOnStartup)
         {
             var db = services.GetRequiredService<AppDbContext>();
-            await RetryAsync(logger, "apply migrations", () => db.Database.MigrateAsync(cancellationToken), cancellationToken);
+            await RetryAsync(logger, "apply migrations", () => MigrateAsync(db, logger, cancellationToken), cancellationToken);
             logger.LogInformation("Database migrations are up to date");
         }
 
         var seeder = services.GetRequiredService<DbSeeder>();
         await RetryAsync(logger, "seed demo data", () => seeder.SeedAsync(cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// На пустой базе EF сначала читает таблицу истории миграций и пишет в лог ошибку команды.
+    /// Создаём таблицу заранее, чтобы первый запуск проходил без ошибок в логе.
+    /// </summary>
+    private static async Task MigrateAsync(AppDbContext db, ILogger logger, CancellationToken cancellationToken)
+    {
+        var historyTableExists = await db.Database
+            .SqlQueryRaw<bool>("SELECT to_regclass('\"__EFMigrationsHistory\"') IS NOT NULL AS \"Value\"")
+            .SingleAsync(cancellationToken);
+
+        if (!historyTableExists)
+        {
+            logger.LogInformation("Empty database detected, creating migrations history table");
+            await db.Database.ExecuteSqlRawAsync(db.GetService<IHistoryRepository>().GetCreateScript(), cancellationToken);
+        }
+
+        await db.Database.MigrateAsync(cancellationToken);
     }
 
     private static async Task RetryAsync(ILogger logger, string operation, Func<Task> action, CancellationToken cancellationToken)

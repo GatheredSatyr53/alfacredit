@@ -19,6 +19,8 @@ public static class CompanyMapper
         company.HeadName,
         company.TaxRegime,
         company.AnnualRevenue,
+        company.AnnualExpenses,
+        company.NetProfit,
         company.MonthlyDebtPayments,
         company.EmployeesCount,
         actor.IsBankEmployee ? null : company.Members.FirstOrDefault(m => m.UserId == actor.UserId)?.Role);

@@ -935,6 +935,18 @@
             "description": "Выручка за 12 месяцев, ₽.",
             "format": "double"
           },
+          "annualExpenses": {
+            "type": "number",
+            "description": "Расходы за 12 месяцев, ₽; null, если учёт не ведётся.",
+            "format": "double",
+            "nullable": true
+          },
+          "netProfit": {
+            "type": "number",
+            "description": "Чистая прибыль за 12 месяцев, ₽; отрицательная при убытке, null, если неизвестна.",
+            "format": "double",
+            "nullable": true
+          },
           "monthlyDebtPayments": {
             "type": "number",
             "description": "Текущие ежемесячные платежи по обязательствам, ₽.",
