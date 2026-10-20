@@ -11,7 +11,7 @@ namespace AlfaCredit.Api.Controllers;
 
 /// <summary>Аутентификация: вход по логину и паролю, текущий пользователь.</summary>
 [ApiController]
-[Route("api/v1/auth")]
+[Route("api/auth")]
 [Produces("application/json")]
 public sealed class AuthController(AuthService authService, IUserRepository users) : ControllerBase
 {

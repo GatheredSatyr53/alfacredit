@@ -17,8 +17,13 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3)));
+        services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<AppDbContext>());
 
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ICompanyRepository, CompanyRepository>();
+        services.AddScoped<ICreditProductRepository, CreditProductRepository>();
+        services.AddScoped<ICreditApplicationRepository, CreditApplicationRepository>();
+
         services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
         services.AddScoped<DbSeeder>();
         services.TryAddSingleton(TimeProvider.System);

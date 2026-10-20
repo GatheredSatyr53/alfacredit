@@ -1,0 +1,1300 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "AlfaCredit API",
+    "description": "Цифровой кредитный конвейер для малого и микробизнеса: личный кабинет клиента, обработка заявок на стороне банка, скоринг и кредитное решение. Для защищённых методов получите токен через POST /api/auth/login и нажмите Authorize.",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/applications/statuses": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Справочник статусов заявки с текстами для интерфейса.",
+        "responses": {
+          "200": {
+            "description": "Все статусы в порядке прохождения.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationStatusDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/applications": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Список заявок.",
+        "description": "Клиент видит заявки своих компаний, сотрудник банка все заявки. Сортировка от новых к старым.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Фильтр по статусу.",
+            "schema": {
+              "$ref": "#/components/schemas/ApplicationStatus"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Номер страницы, с 1.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Размер страницы, 1..100.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Страница заявок.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationSummaryDtoPagedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          },
+          "403": {
+            "description": "Недостаточно прав"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Подать кредитную заявку.",
+        "description": "Проверяет поля запроса и соответствие продукту: сумму, срок, цель и возраст бизнеса.\nПри ошибке возвращает 400 с перечнем проблем по полям (errors.amount, errors.termMonths и т.д.).\nЗаявка создаётся сразу в статусе Submitted и попадает в обработку банка.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApplicationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApplicationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApplicationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Заявка создана. В заголовке Location адрес заявки.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateApplicationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации с указанием полей.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Пользователь не представитель компании или не клиент.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/applications/{id}": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Заявка по идентификатору: параметры, статус, доступные действия и история.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Заявка найдена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа к заявке другой компании.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/applications/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Отменить заявку.",
+        "description": "Доступно клиенту, пока банк не принял решение. Тело запроса необязательно.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelApplicationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelApplicationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelApplicationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Заявка отменена, возвращается её актуальное состояние.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа к заявке.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "В текущем статусе отмена недоступна.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Вход по логину и паролю.",
+        "description": "Возвращает JWT. Демо-учётки и пароль перечислены в README.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Токен выдан.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Запрос не прошёл валидацию.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неверный логин или пароль, либо учётка отключена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Слишком много попыток входа с этого адреса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Профиль текущего пользователя по токену.",
+        "responses": {
+          "200": {
+            "description": "Профиль найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Пользователь из токена больше не существует.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          },
+          "403": {
+            "description": "Недостаточно прав"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/companies": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Компании, от имени которых текущий пользователь может подавать заявки.",
+        "description": "Для сотрудника банка возвращает все компании.",
+        "responses": {
+          "200": {
+            "description": "Список компаний.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          },
+          "403": {
+            "description": "Недостаточно прав"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/companies/{id}": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Карточка компании.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Компания найдена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Пользователь не является представителем компании.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Компания не найдена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/products": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Список активных кредитных продуктов.",
+        "responses": {
+          "200": {
+            "description": "Продукты в порядке отображения на витрине.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/{code}": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Кредитный продукт по коду.",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "description": "Код продукта, например working-capital.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Продукт найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Продукт с таким кодом не существует или отключён.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActorType": {
+        "enum": [
+          "Client",
+          "Manager",
+          "System"
+        ],
+        "type": "string"
+      },
+      "ApplicationCompanyDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "inn": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Компания в заявке."
+      },
+      "ApplicationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Идентификатор.",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "string",
+            "description": "Человекочитаемый номер."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApplicationStatusDto"
+          },
+          "company": {
+            "$ref": "#/components/schemas/ApplicationCompanyDto"
+          },
+          "product": {
+            "$ref": "#/components/schemas/ApplicationProductDto"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Запрошенная сумма, ₽.",
+            "format": "double"
+          },
+          "termMonths": {
+            "type": "integer",
+            "description": "Запрошенный срок, мес.",
+            "format": "int32"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/LoanPurpose"
+          },
+          "purposeTitle": {
+            "type": "string",
+            "description": "Название цели для интерфейса."
+          },
+          "purposeDescription": {
+            "type": "string",
+            "description": "Описание цели от клиента.",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string",
+            "description": "Кто подал заявку.",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Создана (UTC).",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "Последнее изменение (UTC).",
+            "format": "date-time"
+          },
+          "availableActions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Действия, доступные текущему пользователю: cancel, acceptOffer, declineOffer, signContract, answerClarification и другие."
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationHistoryEntryDto"
+            },
+            "description": "История статусов от создания к текущему."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Кредитная заявка целиком: параметры, статус, доступные действия и история."
+      },
+      "ApplicationHistoryEntryDto": {
+        "type": "object",
+        "properties": {
+          "fromStatus": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "toStatus": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "toStatusTitle": {
+            "type": "string",
+            "description": "Название нового статуса."
+          },
+          "actor": {
+            "$ref": "#/components/schemas/ActorType"
+          },
+          "actorUserId": {
+            "type": "string",
+            "description": "Пользователь, если действие выполнил человек.",
+            "format": "uuid",
+            "nullable": true
+          },
+          "comment": {
+            "type": "string",
+            "description": "Комментарий к переходу.",
+            "nullable": true
+          },
+          "occurredAt": {
+            "type": "string",
+            "description": "Когда (UTC).",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Запись истории статусов."
+      },
+      "ApplicationProductDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Продукт в заявке."
+      },
+      "ApplicationStatus": {
+        "enum": [
+          "Draft",
+          "Submitted",
+          "Validating",
+          "NeedsClarification",
+          "Enriching",
+          "Scoring",
+          "Deciding",
+          "ManualReview",
+          "Approved",
+          "ApprovedWithConditions",
+          "Rejected",
+          "ContractSigning",
+          "Signed",
+          "Disbursed",
+          "Cancelled",
+          "OfferDeclined"
+        ],
+        "type": "string"
+      },
+      "ApplicationStatusDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "title": {
+            "type": "string",
+            "description": "Короткое название."
+          },
+          "description": {
+            "type": "string",
+            "description": "Что происходит, простым языком для клиента."
+          },
+          "clientNextAction": {
+            "type": "string",
+            "description": "Что сейчас требуется от клиента."
+          },
+          "bankNextAction": {
+            "type": "string",
+            "description": "Что сейчас требуется от банка."
+          },
+          "isTerminal": {
+            "type": "boolean",
+            "description": "Конечный статус."
+          },
+          "progressStep": {
+            "type": "integer",
+            "description": "Шаг прогресс-бара, 0..TotalSteps.",
+            "format": "int32"
+          },
+          "totalSteps": {
+            "type": "integer",
+            "description": "Всего шагов прогресс-бара.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Статус заявки с текстами для интерфейса."
+      },
+      "ApplicationSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApplicationStatusDto"
+          },
+          "company": {
+            "$ref": "#/components/schemas/ApplicationCompanyDto"
+          },
+          "product": {
+            "$ref": "#/components/schemas/ApplicationProductDto"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "termMonths": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/LoanPurpose"
+          },
+          "purposeTitle": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Краткая карточка заявки для списков."
+      },
+      "ApplicationSummaryDtoPagedResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationSummaryDto"
+            },
+            "description": "Элементы текущей страницы."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Номер страницы, с 1.",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Размер страницы.",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "description": "Всего элементов по фильтру.",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "Всего страниц.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Страница результатов."
+      },
+      "CancelApplicationRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string",
+            "description": "Причина отмены, до 1000 символов.",
+            "nullable": true,
+            "example": "Передумали брать кредит"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Отмена заявки клиентом. Тело запроса необязательно."
+      },
+      "CompanyDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Идентификатор; передаётся в заявке как companyId.",
+            "format": "uuid"
+          },
+          "inn": {
+            "type": "string",
+            "description": "ИНН."
+          },
+          "ogrn": {
+            "type": "string",
+            "description": "ОГРН или ОГРНИП."
+          },
+          "name": {
+            "type": "string",
+            "description": "Наименование."
+          },
+          "legalForm": {
+            "$ref": "#/components/schemas/LegalForm"
+          },
+          "okved": {
+            "type": "string",
+            "description": "Основной ОКВЭД."
+          },
+          "registeredAt": {
+            "type": "string",
+            "description": "Дата регистрации.",
+            "format": "date"
+          },
+          "businessAgeMonths": {
+            "type": "integer",
+            "description": "Возраст бизнеса в месяцах на сегодня.",
+            "format": "int32"
+          },
+          "address": {
+            "type": "string",
+            "description": "Адрес."
+          },
+          "headName": {
+            "type": "string",
+            "description": "Руководитель."
+          },
+          "taxRegime": {
+            "$ref": "#/components/schemas/TaxRegime"
+          },
+          "annualRevenue": {
+            "type": "number",
+            "description": "Выручка за 12 месяцев, ₽.",
+            "format": "double"
+          },
+          "monthlyDebtPayments": {
+            "type": "number",
+            "description": "Текущие ежемесячные платежи по обязательствам, ₽.",
+            "format": "double"
+          },
+          "employeesCount": {
+            "type": "integer",
+            "description": "Число сотрудников.",
+            "format": "int32"
+          },
+          "myRole": {
+            "$ref": "#/components/schemas/CompanyMemberRole"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Компания или ИП клиента."
+      },
+      "CompanyMemberRole": {
+        "enum": [
+          "Owner",
+          "Director",
+          "Accountant",
+          "Employee"
+        ],
+        "type": "string"
+      },
+      "CreateApplicationRequest": {
+        "required": [
+          "companyId",
+          "productCode",
+          "purpose"
+        ],
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "description": "Идентификатор компании, от имени которой подаётся заявка. Список своих компаний: GET /api/companies.",
+            "format": "uuid",
+            "example": "0199f3a2-5b3c-7b1a-9c0e-6d1f2a3b4c5d"
+          },
+          "productCode": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string",
+            "description": "Код кредитного продукта из GET /api/products.",
+            "example": "working-capital"
+          },
+          "amount": {
+            "maximum": 1000000000,
+            "minimum": 1,
+            "type": "number",
+            "description": "Запрашиваемая сумма в рублях.",
+            "format": "double",
+            "example": 1500000
+          },
+          "termMonths": {
+            "maximum": 120,
+            "minimum": 1,
+            "type": "integer",
+            "description": "Срок в месяцах.",
+            "format": "int32",
+            "example": 12
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/LoanPurpose"
+          },
+          "purposeDescription": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string",
+            "description": "Свободное описание цели, до 1000 символов.",
+            "nullable": true,
+            "example": "Закупка товара к высокому сезону"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Данные новой кредитной заявки. Заявка сразу отправляется в банк."
+      },
+      "CreateApplicationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Идентификатор заявки для GET /api/applications/{id}.",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "string",
+            "description": "Человекочитаемый номер, например AC-000001."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Результат создания заявки."
+      },
+      "LegalForm": {
+        "enum": [
+          "Ooo",
+          "Ip"
+        ],
+        "type": "string"
+      },
+      "LoanPurpose": {
+        "enum": [
+          "WorkingCapital",
+          "Equipment",
+          "Expansion",
+          "Refinancing",
+          "Other"
+        ],
+        "type": "string"
+      },
+      "LoanPurposeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/LoanPurpose"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Цель финансирования: код для API и название для интерфейса."
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "login": {
+            "type": "string",
+            "description": "Логин, например client_good или manager."
+          },
+          "password": {
+            "type": "string",
+            "description": "Пароль. У демо-учёток общий, см. README."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Запрос на вход по логину и паролю."
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "JWT для заголовка Authorization: Bearer."
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "Момент истечения токена (UTC).",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Результат успешного входа."
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": {}
+      },
+      "ProductDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Код продукта; передаётся в заявке как productCode."
+          },
+          "name": {
+            "type": "string",
+            "description": "Название."
+          },
+          "description": {
+            "type": "string",
+            "description": "Описание для клиента: кому и для чего подходит."
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProductType"
+          },
+          "minAmount": {
+            "type": "number",
+            "description": "Минимальная сумма, ₽.",
+            "format": "double"
+          },
+          "maxAmount": {
+            "type": "number",
+            "description": "Максимальная сумма, ₽.",
+            "format": "double"
+          },
+          "minTermMonths": {
+            "type": "integer",
+            "description": "Минимальный срок, мес.",
+            "format": "int32"
+          },
+          "maxTermMonths": {
+            "type": "integer",
+            "description": "Максимальный срок, мес.",
+            "format": "int32"
+          },
+          "baseRate": {
+            "type": "number",
+            "description": "Базовая годовая ставка, %. Итоговая ставка зависит от оценки риска.",
+            "format": "double"
+          },
+          "allowedPurposes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoanPurposeDto"
+            },
+            "description": "Допустимые цели финансирования."
+          },
+          "minBusinessAgeMonths": {
+            "type": "integer",
+            "description": "Минимальный возраст бизнеса, мес.",
+            "format": "int32"
+          },
+          "requiresCollateral": {
+            "type": "boolean",
+            "description": "Требуется ли залог."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Кредитный продукт банка."
+      },
+      "ProductType": {
+        "enum": [
+          "WorkingCapital",
+          "Investment",
+          "Overdraft",
+          "CreditLine",
+          "Express"
+        ],
+        "type": "string"
+      },
+      "TaxRegime": {
+        "enum": [
+          "Osno",
+          "UsnIncome",
+          "UsnIncomeExpenses",
+          "Patent"
+        ],
+        "type": "string"
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "login": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Профиль пользователя."
+      },
+      "UserRole": {
+        "enum": [
+          "Client",
+          "Manager",
+          "Admin"
+        ],
+        "type": "string"
+      },
+      "ValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "additionalProperties": {}
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "JWT из ответа POST /api/auth/login. Префикс Bearer подставляется автоматически.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Applications",
+      "description": "Кредитные заявки: подача, просмотр, список, отмена."
+    },
+    {
+      "name": "Auth",
+      "description": "Аутентификация: вход по логину и паролю, текущий пользователь."
+    },
+    {
+      "name": "Companies",
+      "description": "Компании клиента. Клиент видит только свои компании, сотрудник банка все."
+    },
+    {
+      "name": "Products",
+      "description": "Каталог кредитных продуктов. Доступен без входа, чтобы показывать витрину до регистрации."
+    }
+  ]
+}

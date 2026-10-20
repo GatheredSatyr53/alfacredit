@@ -17,7 +17,7 @@ public static class SwaggerSetup
                 Version = "v1",
                 Description = "Цифровой кредитный конвейер для малого и микробизнеса: личный кабинет клиента, "
                     + "обработка заявок на стороне банка, скоринг и кредитное решение. "
-                    + "Для защищённых методов получите токен через POST /api/v1/auth/login и нажмите Authorize.",
+                    + "Для защищённых методов получите токен через POST /api/auth/login и нажмите Authorize.",
             });
 
             var xmlPath = Path.Combine(AppContext.BaseDirectory, $"{typeof(Program).Assembly.GetName().Name}.xml");
@@ -35,7 +35,7 @@ public static class SwaggerSetup
                 Scheme = "bearer",
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
-                Description = "JWT из ответа POST /api/v1/auth/login. Префикс Bearer подставляется автоматически.",
+                Description = "JWT из ответа POST /api/auth/login. Префикс Bearer подставляется автоматически.",
             });
 
             options.OperationFilter<AuthorizeCheckOperationFilter>();

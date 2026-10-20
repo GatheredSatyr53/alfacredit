@@ -2,7 +2,7 @@
 # Запуск через docker compose: baseUrl = http://localhost:8080, через dotnet run: http://localhost:5080
 
 @baseUrl = http://localhost:8080
-@login = manager
+@login = client_good
 @password = Demo123!
 
 ### Liveness: процесс жив
@@ -14,9 +14,18 @@ GET {{baseUrl}}/health/ready
 ### OpenAPI-документ
 GET {{baseUrl}}/swagger/v1/swagger.json
 
+### Каталог продуктов (без токена)
+GET {{baseUrl}}/api/products
+
+### Продукт по коду
+GET {{baseUrl}}/api/products/working-capital
+
+### Справочник статусов заявки (без токена)
+GET {{baseUrl}}/api/applications/statuses
+
 ### Вход и получение JWT
 # @name login
-POST {{baseUrl}}/api/v1/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -29,16 +38,68 @@ Content-Type: application/json
   client.global.set("token", response.body.accessToken);
 %}
 
-### Профиль текущего пользователя (VS Code REST Client подставит токен из ответа login)
-GET {{baseUrl}}/api/v1/auth/me
-Authorization: Bearer {{login.response.body.$.accessToken}}
+@token = {{login.response.body.$.accessToken}}
 
-### Профиль текущего пользователя (вариант для JetBrains HTTP Client)
-GET {{baseUrl}}/api/v1/auth/me
+### Профиль текущего пользователя
+GET {{baseUrl}}/api/auth/me
 Authorization: Bearer {{token}}
 
+### Мои компании: id нужен для заявки
+# @name companies
+GET {{baseUrl}}/api/companies
+Authorization: Bearer {{token}}
+
+@companyId = {{companies.response.body.$[0].id}}
+
+### Подать заявку
+# @name createApplication
+POST {{baseUrl}}/api/applications
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "companyId": "{{companyId}}",
+  "productCode": "working-capital",
+  "amount": 1500000,
+  "termMonths": 12,
+  "purpose": "WorkingCapital",
+  "purposeDescription": "Закупка товара к сезону"
+}
+
+@applicationId = {{createApplication.response.body.$.id}}
+
+### Заявка по идентификатору: статус, действия, история
+GET {{baseUrl}}/api/applications/{{applicationId}}
+Authorization: Bearer {{token}}
+
+### Мои заявки
+GET {{baseUrl}}/api/applications?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### Отменить заявку
+POST {{baseUrl}}/api/applications/{{applicationId}}/cancel
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "reason": "Нашли другой источник финансирования"
+}
+
+### Ошибка валидации: сумма и срок вне границ продукта, цель не подходит -> 400 с ошибками по полям
+POST {{baseUrl}}/api/applications
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "companyId": "{{companyId}}",
+  "productCode": "overdraft",
+  "amount": 50000000,
+  "termMonths": 60,
+  "purpose": "Equipment"
+}
+
 ### Неверный пароль: 401 в формате ProblemDetails
-POST {{baseUrl}}/api/v1/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -47,4 +108,4 @@ Content-Type: application/json
 }
 
 ### Без токена: 401
-GET {{baseUrl}}/api/v1/auth/me
+GET {{baseUrl}}/api/applications

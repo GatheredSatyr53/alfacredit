@@ -44,6 +44,6 @@ public sealed class HealthEndpointsTests(ApiFactory factory)
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var document = await response.Content.ReadFromJsonAsync<JsonElement>();
-        document.GetProperty("paths").TryGetProperty("/api/v1/auth/login", out _).ShouldBeTrue();
+        document.GetProperty("paths").TryGetProperty("/api/auth/login", out _).ShouldBeTrue();
     }
 }

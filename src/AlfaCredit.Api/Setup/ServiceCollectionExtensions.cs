@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using AlfaCredit.Infrastructure.Persistence;
 using AlfaCredit.Infrastructure.Persistence.Seeding;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace AlfaCredit.Api.Setup;
@@ -20,10 +21,15 @@ public static class ServiceCollectionExtensions
                 options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
             });
 
+        // Ошибки валидации входных данных: ключи полей в camelCase, как в JSON, сообщения по-русски
+        services.Configure<ApiBehaviorOptions>(options =>
+            options.InvalidModelStateResponseFactory = ValidationProblemFactory.Create);
+
         // Единый формат ошибок RFC 9457 (ProblemDetails) с traceId для поддержки
         services.AddProblemDetails(options =>
             options.CustomizeProblemDetails = context =>
                 context.ProblemDetails.Extensions.TryAdd("traceId", context.HttpContext.TraceIdentifier));
+        services.AddExceptionHandler<DomainExceptionHandler>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
 
         services.AddOptions<DatabaseOptions>()
@@ -36,7 +42,8 @@ public static class ServiceCollectionExtensions
         services.AddCors(options => options.AddDefaultPolicy(policy => policy
             .WithOrigins(ParseOrigins(configuration["Cors:Origins"]))
             .AllowAnyHeader()
-            .AllowAnyMethod()));
+            .AllowAnyMethod()
+            .WithExposedHeaders("Location")));
 
         // Защита от перебора паролей: лимит попыток входа на один IP
         services.AddRateLimiter(options =>

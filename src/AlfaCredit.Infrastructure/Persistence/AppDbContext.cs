@@ -1,14 +1,32 @@
+using AlfaCredit.Core.Abstractions;
+using AlfaCredit.Core.Domain.Applications;
+using AlfaCredit.Core.Domain.Companies;
+using AlfaCredit.Core.Domain.Products;
 using AlfaCredit.Core.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace AlfaCredit.Infrastructure.Persistence;
 
-public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), IUnitOfWork
 {
+    /// <summary>Последовательность для человекочитаемых номеров заявок AC-000001.</summary>
+    public const string ApplicationNumberSequence = "application_number_seq";
+
     public DbSet<User> Users => Set<User>();
+
+    public DbSet<Company> Companies => Set<Company>();
+
+    public DbSet<CompanyMember> CompanyMembers => Set<CompanyMember>();
+
+    public DbSet<CreditProduct> CreditProducts => Set<CreditProduct>();
+
+    public DbSet<CreditApplication> CreditApplications => Set<CreditApplication>();
+
+    public DbSet<ApplicationStatusHistory> ApplicationStatusHistory => Set<ApplicationStatusHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasSequence<long>(ApplicationNumberSequence).StartsAt(1).IncrementsBy(1);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }

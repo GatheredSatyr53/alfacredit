@@ -1,4 +1,5 @@
 using AlfaCredit.Core.Abstractions;
+using AlfaCredit.Core.Domain.Companies;
 using AlfaCredit.Core.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -6,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace AlfaCredit.Infrastructure.Persistence.Seeding;
 
-/// <summary>Синтетические данные для демонстрации. Идемпотентен: уже существующие записи не трогает.</summary>
+/// <summary>Синтетические данные для демонстрации. Идемпотентен: повторный запуск ничего не дублирует.</summary>
 public sealed class DbSeeder(
     AppDbContext db,
     IPasswordHasher passwordHasher,
@@ -14,17 +15,6 @@ public sealed class DbSeeder(
     TimeProvider clock,
     ILogger<DbSeeder> logger)
 {
-    public static readonly IReadOnlyList<DemoAccount> Accounts =
-    [
-        new("client_good", "Мария Иванова", UserRole.Client, "ООО «Ромашка», стабильный бизнес: ожидается автоодобрение"),
-        new("client_medium", "Сергей Кузнецов", UserRole.Client, "ИП Кузнецов, повышенная долговая нагрузка: одобрение с изменёнными условиями"),
-        new("client_manual", "Анна Смирнова", UserRole.Client, "ООО «Вектор», крупная сумма: ручное рассмотрение менеджером"),
-        new("client_bad", "Дмитрий Волков", UserRole.Client, "ООО «Закат», просрочки и налоговая задолженность: отказ с объяснением"),
-        new("client_new", "Елена Петрова", UserRole.Client, "ИП Петрова, бизнесу 4 месяца: подсказка о неподходящих продуктах"),
-        new("manager", "Алексей Петров", UserRole.Manager, "Кредитный менеджер: очередь заявок и ручные решения"),
-        new("admin", "Ольга Соколова", UserRole.Admin, "Администратор: продукты, параметры политики, аудит"),
-    ];
-
     public async Task SeedAsync(CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
@@ -33,18 +23,36 @@ public sealed class DbSeeder(
             return;
         }
 
-        var existingLogins = await db.Users.Select(u => u.Login).ToHashSetAsync(cancellationToken);
+        var now = clock.GetUtcNow();
+
+        var users = await SeedUsersAsync(now, cancellationToken);
+        var products = await SeedProductsAsync(cancellationToken);
+        var companies = await SeedCompaniesAsync(users, now, cancellationToken);
+
+        logger.LogInformation(
+            "Seeding completed: users +{Users}, products +{Products}, companies +{Companies}",
+            users.Added,
+            products,
+            companies);
+    }
+
+    private async Task<(int Added, Dictionary<string, Guid> IdsByLogin)> SeedUsersAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var existing = await db.Users
+            .Select(u => new { u.Login, u.Id })
+            .ToDictionaryAsync(u => u.Login, u => u.Id, cancellationToken);
         var added = 0;
 
-        foreach (var account in Accounts)
+        foreach (var account in SeedData.Accounts)
         {
-            if (existingLogins.Contains(account.Login))
+            if (existing.ContainsKey(account.Login))
             {
                 continue;
             }
 
-            var passwordHash = passwordHasher.Hash(options.Value.DemoPassword);
-            db.Users.Add(User.Create(account.Login, passwordHash, account.FullName, account.Role, clock.GetUtcNow()));
+            var user = User.Create(account.Login, passwordHasher.Hash(options.Value.DemoPassword), account.FullName, account.Role, now);
+            db.Users.Add(user);
+            existing[user.Login] = user.Id;
             added++;
         }
 
@@ -53,6 +61,83 @@ public sealed class DbSeeder(
             await db.SaveChangesAsync(cancellationToken);
         }
 
-        logger.LogInformation("Seeding completed: {AddedAccounts} demo accounts added, {ExistingAccounts} already existed", added, existingLogins.Count);
+        return (added, existing);
+    }
+
+    private async Task<int> SeedProductsAsync(CancellationToken cancellationToken)
+    {
+        var existingCodes = await db.CreditProducts.Select(p => p.Code).ToHashSetAsync(cancellationToken);
+        var added = 0;
+
+        foreach (var product in SeedData.CreateProducts())
+        {
+            if (existingCodes.Contains(product.Code))
+            {
+                continue;
+            }
+
+            db.CreditProducts.Add(product);
+            added++;
+        }
+
+        if (added > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return added;
+    }
+
+    private async Task<int> SeedCompaniesAsync((int Added, Dictionary<string, Guid> IdsByLogin) users, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var existing = await db.Companies
+            .Include(c => c.Members)
+            .ToDictionaryAsync(c => c.Inn, cancellationToken);
+        var added = 0;
+        var changed = false;
+
+        foreach (var demo in SeedData.Companies)
+        {
+            if (!users.IdsByLogin.TryGetValue(demo.OwnerLogin, out var ownerId))
+            {
+                logger.LogWarning("Seed company {Inn} skipped: owner login {Login} not found", demo.Inn, demo.OwnerLogin);
+                continue;
+            }
+
+            if (!existing.TryGetValue(demo.Inn, out var company))
+            {
+                company = Company.Create(
+                    demo.Inn,
+                    demo.Ogrn,
+                    demo.Name,
+                    demo.LegalForm,
+                    demo.Okved,
+                    demo.RegisteredAt,
+                    demo.Address,
+                    demo.HeadName,
+                    demo.TaxRegime,
+                    demo.AnnualRevenue,
+                    demo.MonthlyDebtPayments,
+                    demo.EmployeesCount,
+                    now);
+                db.Companies.Add(company);
+                existing[company.Inn] = company;
+                added++;
+                changed = true;
+            }
+
+            if (!company.HasMember(ownerId))
+            {
+                company.AddMember(ownerId, demo.OwnerRole, now);
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return added;
     }
 }
