@@ -43,6 +43,9 @@ services:
       Cors__Origins: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
       Swagger__Enabled: "true"
       Processing__StageDelaySeconds: ${PROCESSING_STAGE_DELAY_SECONDS:-2}
+      Simulators__FailureRate: ${SIMULATORS_FAILURE_RATE:-0}
+      Scoring__Mode: ${SCORING_MODE:-Rules}
+      Scoring__BaseUrl: ${SCORING_BASE_URL:-http://scoring:8000}
     ports:
       - "${API_PORT:-8080}:8080"
     healthcheck:

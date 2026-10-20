@@ -238,6 +238,40 @@
           }
         },
         {
+          "name": "Accept offer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/offer/accept"
+          }
+        },
+        {
+          "name": "Decline offer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/offer/decline",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Нашли предложение с меньшей ставкой\"\n}"
+            }
+          }
+        },
+        {
           "name": "Cancel application",
           "request": {
             "method": "POST",
@@ -277,6 +311,50 @@
               "mode": "raw",
               "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"productCode\": \"overdraft\",\n  \"amount\": 50000000,\n  \"termMonths\": 60,\n  \"purpose\": \"Equipment\"\n}"
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feed",
+      "item": [
+        {
+          "name": "List feed",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/feed?page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "Unread count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/feed/unread-count"
+          }
+        },
+        {
+          "name": "Mark all read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/feed/read-all"
           }
         }
       ]

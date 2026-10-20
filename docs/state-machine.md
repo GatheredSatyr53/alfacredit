@@ -44,6 +44,9 @@ stateDiagram-v2
 Статус `Draft` зарезервирован в перечислении на случай черновиков, но текущий API создаёт заявку сразу в `Submitted`:
 мастер заявки хранит промежуточное состояние на стороне фронтенда.
 
+Автоматические этапы (Validating, Enriching, Scoring, Deciding) выполняет фоновый воркер: каждый этап это задание
+в таблице `processing_jobs`, логика описана в `decision-logic.md`.
+
 ## Таблица переходов
 
 | Из | В | Кто | Когда |
@@ -52,6 +55,7 @@ stateDiagram-v2
 | Submitted, Validating, NeedsClarification, ManualReview | Cancelled | клиент | `POST /api/applications/{id}/cancel` |
 | Validating | Enriching | система | обязательные данные и документы на месте |
 | Validating | NeedsClarification | система, менеджер | чего-то не хватает |
+| Submitted, Validating, Scoring | ManualReview | система | этап конвейера не удалось выполнить после трёх попыток |
 | NeedsClarification | Validating | клиент | ответ на запрос банка |
 | Enriching | Scoring | система | все внешние проверки получены |
 | Enriching | ManualReview | система | внешние проверки недоступны после повторных попыток |
@@ -87,7 +91,7 @@ stateDiagram-v2
 |---|---|---|
 | `cancel` | в Cancelled | `POST /api/applications/{id}/cancel` |
 | `answerClarification` | NeedsClarification в Validating | этап 3 |
-| `acceptOffer` | в ContractSigning | этап 4 |
-| `declineOffer` | в OfferDeclined | этап 4 |
+| `acceptOffer` | в ContractSigning | `POST /api/applications/{id}/offer/accept` |
+| `declineOffer` | в OfferDeclined | `POST /api/applications/{id}/offer/decline`; истёкшее предложение закрывает система |
 | `signContract` | в Signed | этап 4 |
 | `requestClarification`, `approve`, `approveWithConditions`, `reject` | решения менеджера | этап 3 |

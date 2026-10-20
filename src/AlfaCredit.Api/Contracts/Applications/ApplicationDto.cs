@@ -4,7 +4,7 @@ using AlfaCredit.Core.Domain.Products;
 
 namespace AlfaCredit.Api.Contracts.Applications;
 
-/// <summary>Кредитная заявка целиком: параметры, статус, доступные действия и история.</summary>
+/// <summary>Кредитная заявка целиком: параметры, статус, решение, предложение, доступные действия и история.</summary>
 /// <param name="Id">Идентификатор.</param>
 /// <param name="Number">Человекочитаемый номер.</param>
 /// <param name="Status">Текущий статус с текстами для интерфейса.</param>
@@ -18,7 +18,11 @@ namespace AlfaCredit.Api.Contracts.Applications;
 /// <param name="CreatedByUserId">Кто подал заявку.</param>
 /// <param name="CreatedAt">Создана (UTC).</param>
 /// <param name="UpdatedAt">Последнее изменение (UTC).</param>
-/// <param name="AvailableActions">Действия, доступные текущему пользователю: cancel, acceptOffer, declineOffer, signContract, answerClarification и другие.</param>
+/// <param name="AvailableActions">Действия, доступные текущему пользователю: cancel, acceptOffer, declineOffer и другие.</param>
+/// <param name="Decision">Последнее решение банка; null, пока решения нет.</param>
+/// <param name="Offer">Действующее предложение банка; null, если его нет.</param>
+/// <param name="Scoring">Результат скоринга; заполняется только для сотрудников банка.</param>
+/// <param name="Checks">Внешние проверки; заполняются только для сотрудников банка.</param>
 /// <param name="History">История статусов от создания к текущему.</param>
 public sealed record ApplicationDto(
     Guid Id,
@@ -35,6 +39,10 @@ public sealed record ApplicationDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     IReadOnlyList<string> AvailableActions,
+    DecisionDto? Decision,
+    OfferDto? Offer,
+    ScoringDto? Scoring,
+    IReadOnlyList<ExternalCheckDto>? Checks,
     IReadOnlyList<ApplicationHistoryEntryDto> History);
 
 /// <summary>Краткая карточка заявки для списков.</summary>

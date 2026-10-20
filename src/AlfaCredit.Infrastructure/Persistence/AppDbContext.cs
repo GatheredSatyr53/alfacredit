@@ -1,6 +1,11 @@
 using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Core.Domain.Applications;
+using AlfaCredit.Core.Domain.Checks;
 using AlfaCredit.Core.Domain.Companies;
+using AlfaCredit.Core.Domain.Decisions;
+using AlfaCredit.Core.Domain.Feed;
+using AlfaCredit.Core.Domain.Processing;
+using AlfaCredit.Core.Domain.Scoring;
 using AlfaCredit.Core.Domain.Products;
 using AlfaCredit.Core.Domain.Users;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +28,18 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<CreditApplication> CreditApplications => Set<CreditApplication>();
 
     public DbSet<ApplicationStatusHistory> ApplicationStatusHistory => Set<ApplicationStatusHistory>();
+
+    public DbSet<ProcessingJob> ProcessingJobs => Set<ProcessingJob>();
+
+    public DbSet<ExternalCheck> ExternalChecks => Set<ExternalCheck>();
+
+    public DbSet<ScoringResult> ScoringResults => Set<ScoringResult>();
+
+    public DbSet<Decision> Decisions => Set<Decision>();
+
+    public DbSet<Offer> Offers => Set<Offer>();
+
+    public DbSet<FeedItem> FeedItems => Set<FeedItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

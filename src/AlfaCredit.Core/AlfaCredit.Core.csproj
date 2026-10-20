@@ -2,4 +2,9 @@
 
   <!-- Домен и сценарии. Не зависит от EF Core, ASP.NET Core и других инфраструктурных библиотек -->
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
 </Project>

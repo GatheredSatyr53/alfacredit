@@ -36,6 +36,12 @@ internal sealed class DomainExceptionHandler(IProblemDetailsService problemDetai
                 Title = "Действие недоступно в текущем статусе",
                 Detail = transition.Message,
             },
+            ConflictException conflict => new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Действие сейчас невозможно",
+                Detail = conflict.Message,
+            },
             _ => null,
         };
 

@@ -196,7 +196,56 @@
 ```
 
 `availableActions` перечисляет действия, доступные текущему пользователю в этом статусе; кнопки в интерфейсе
-строятся по нему. Сейчас реализовано `cancel`, остальные появятся вместе с конвейером и решениями банка.
+строятся по нему: `cancel`, `acceptOffer`, `declineOffer`. Действия менеджера и подписание появятся на следующих этапах.
+
+После подачи заявка автоматически проходит конвейер банка, статус меняется каждые ~2 секунды. Когда решение принято,
+в ответе появляются `decision` и, для одобрения, `offer`:
+
+```json
+{
+  "status": { "code": "Approved", "title": "Одобрена", "clientNextAction": "Ознакомьтесь с предложением и примите или отклоните его.", "progressStep": 4, "totalSteps": 6, "...": "..." },
+  "availableActions": ["acceptOffer", "declineOffer"],
+  "decision": {
+    "type": "Approved",
+    "isFinal": true,
+    "decidedBy": "Auto",
+    "recommendedType": null,
+    "approvedAmount": 1500000, "approvedTermMonths": 12, "interestRate": 19.5, "monthlyPayment": 138593.06,
+    "conditions": null,
+    "reasons": [
+      { "code": "risk_grade", "title": "Грейд риска A, 95 баллов", "explanation": "Низкий уровень риска: финансовое положение устойчивое." },
+      { "code": "factor_credit_history", "title": "Кредитная история", "explanation": "Просрочек по кредитам за два года нет." }
+    ],
+    "decidedAt": "2026-10-20T17:47:02.1+00:00"
+  },
+  "offer": {
+    "id": "...", "amount": 1500000, "termMonths": 12, "interestRate": 19.5, "monthlyPayment": 138593.06,
+    "expiresAt": "2026-10-27T17:47:02.1+00:00", "response": "Pending", "respondedAt": null
+  },
+  "scoring": null,
+  "checks": null
+}
+```
+
+| Тип решения | Статус заявки | Что в ответе |
+|---|---|---|
+| `Approved` | Approved | `offer` на запрошенных условиях |
+| `ApprovedWithConditions` | ApprovedWithConditions | `offer` с новыми условиями, `decision.conditions` объясняет изменения, в `reasons` есть `amount_reduced` |
+| `Rejected` | Rejected | `offer` = null, `reasons` перечисляют стоп-факторы или причину по грейду |
+| `ManualReview` | ManualReview | `isFinal` = false, `recommendedType` показывает рекомендацию автоматики менеджеру |
+
+Сотрудник банка в том же методе дополнительно получает `scoring` (балл, грейд, вероятность дефолта, факторы с вкладом)
+и `checks` (результаты ЕГРЮЛ, ФНС, БКИ, ФССП с краткими выводами и флагами риска). Клиенту эти поля приходят как `null`.
+
+### POST /api/applications/{id}/offer/accept
+
+Роль `Client`. Доступно в статусах Approved и ApprovedWithConditions, пока предложение действует (7 дней).
+Тело не нужно. Ответ 200: заявка со статусом `ContractSigning`, `offer.response` = `Accepted`. Повтор даёт 409.
+
+### POST /api/applications/{id}/offer/decline
+
+Роль `Client`. Тело необязательно: `{ "reason": "Нашли предложение с меньшей ставкой" }`.
+Ответ 200: заявка со статусом `OfferDeclined` (терминальный). Истёкшее предложение закрывается системой автоматически.
 
 ### GET /api/applications?status=Submitted&page=1&pageSize=20
 
@@ -225,6 +274,60 @@
 ### GET /api/applications/statuses
 
 Без аутентификации. Справочник всех статусов с текстами, см. `docs/state-machine.md`.
+
+## Лента событий
+
+Единственный канал уведомлений внутри продукта: email и SMS запрещены условиями кейса.
+События создаются для всех представителей компании при каждой смене статуса заявки, решении и предложении;
+менеджеры получают события о заявках, переданных на ручное рассмотрение.
+
+### GET /api/feed?unreadOnly=false&page=1&pageSize=20
+
+```json
+{
+  "items": [
+    {
+      "id": "...", "type": "OfferReady",
+      "title": "Заявка AC-000001 одобрена",
+      "body": "Банк готов выдать 1 500 000 ₽ на 12 мес. под 19,5 % годовых, платёж 138 593 ₽ в месяц. Предложение действует до 27.10.2026.",
+      "applicationId": "...", "link": "/applications/...",
+      "isRead": false, "createdAt": "2026-10-20T17:47:02+00:00"
+    }
+  ],
+  "page": 1, "pageSize": 20, "totalCount": 3, "totalPages": 1
+}
+```
+
+Типы: `StatusChanged`, `ClarificationRequested`, `OfferReady`, `Rejected`, `ManualReview`, `ContractReady`, `Disbursed`, `Recommendation`, `News`.
+
+| Метод | Путь | Назначение |
+|---|---|---|
+| GET | `/api/feed/unread-count` | `{ "unread": 3 }` для бейджа |
+| POST | `/api/feed/{id}/read` | отметить одно событие, возвращает его |
+| POST | `/api/feed/read-all` | отметить все, возвращает число отмеченных |
+
+## Обновления в реальном времени
+
+SignalR-хаб `/hubs/applications`. Клиент получает события по заявкам своих компаний, сотрудник банка по всем.
+Токен передаётся в query-параметре `access_token`, как принято для SignalR в браузере.
+
+```js
+import { HubConnectionBuilder } from "@microsoft/signalr";
+
+const connection = new HubConnectionBuilder()
+  .withUrl("http://localhost:8080/hubs/applications", { accessTokenFactory: () => token })
+  .withAutomaticReconnect()
+  .build();
+
+connection.on("applicationChanged", (e) => {
+  // e: { applicationId, number, companyId, status, statusTitle, updatedAt }
+  refetchApplication(e.applicationId);
+});
+
+await connection.start();
+```
+
+Если SignalR не подключён, достаточно опрашивать `GET /api/applications/{id}` раз в 2–3 секунды.
 
 ## Служебные
 
