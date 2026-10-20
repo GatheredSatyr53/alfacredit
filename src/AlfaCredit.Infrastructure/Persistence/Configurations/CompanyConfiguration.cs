@@ -25,6 +25,8 @@ internal sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(c => c.HeadName).HasColumnName("head_name").HasMaxLength(Company.HeadNameMaxLength).IsRequired();
         builder.Property(c => c.TaxRegime).HasColumnName("tax_regime").HasConversion<string>().HasMaxLength(32).IsRequired();
         builder.Property(c => c.AnnualRevenue).HasColumnName("annual_revenue").HasPrecision(18, 2).IsRequired();
+        builder.Property(c => c.AnnualExpenses).HasColumnName("annual_expenses").HasPrecision(18, 2);
+        builder.Property(c => c.NetProfit).HasColumnName("net_profit").HasPrecision(18, 2);
         builder.Property(c => c.MonthlyDebtPayments).HasColumnName("monthly_debt_payments").HasPrecision(18, 2).IsRequired();
         builder.Property(c => c.EmployeesCount).HasColumnName("employees_count").IsRequired();
         builder.Property(c => c.CreatedAt).HasColumnName("created_at").IsRequired();

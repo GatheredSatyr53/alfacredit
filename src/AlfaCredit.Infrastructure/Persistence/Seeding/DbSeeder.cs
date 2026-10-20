@@ -117,6 +117,8 @@ public sealed class DbSeeder(
                     demo.HeadName,
                     demo.TaxRegime,
                     demo.AnnualRevenue,
+                    demo.AnnualExpenses,
+                    demo.NetProfit,
                     demo.MonthlyDebtPayments,
                     demo.EmployeesCount,
                     now);

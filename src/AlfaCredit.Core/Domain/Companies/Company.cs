@@ -43,6 +43,12 @@ public sealed class Company
     /// <summary>Выручка за последние 12 месяцев, ₽.</summary>
     public decimal AnnualRevenue { get; private set; }
 
+    /// <summary>Расходы за последние 12 месяцев, ₽. Пусто, если клиент не ведёт учёт расходов (например, патент).</summary>
+    public decimal? AnnualExpenses { get; private set; }
+
+    /// <summary>Чистая прибыль за последние 12 месяцев, ₽. Может быть отрицательной (убыток) или пустой.</summary>
+    public decimal? NetProfit { get; private set; }
+
     /// <summary>Текущие ежемесячные платежи по кредитам и лизингу, ₽.</summary>
     public decimal MonthlyDebtPayments { get; private set; }
 
@@ -63,6 +69,8 @@ public sealed class Company
         string headName,
         TaxRegime taxRegime,
         decimal annualRevenue,
+        decimal? annualExpenses,
+        decimal? netProfit,
         decimal monthlyDebtPayments,
         int employeesCount,
         DateTimeOffset createdAt)
@@ -72,6 +80,11 @@ public sealed class Company
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentException.ThrowIfNullOrWhiteSpace(headName);
         ArgumentOutOfRangeException.ThrowIfNegative(annualRevenue);
+        if (annualExpenses is { } expenses)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(expenses);
+        }
+
         ArgumentOutOfRangeException.ThrowIfNegative(monthlyDebtPayments);
         ArgumentOutOfRangeException.ThrowIfNegative(employeesCount);
 
@@ -94,6 +107,8 @@ public sealed class Company
             HeadName = headName.Trim(),
             TaxRegime = taxRegime,
             AnnualRevenue = annualRevenue,
+            AnnualExpenses = annualExpenses,
+            NetProfit = netProfit,
             MonthlyDebtPayments = monthlyDebtPayments,
             EmployeesCount = employeesCount,
             CreatedAt = createdAt,
@@ -114,6 +129,9 @@ public sealed class Company
     }
 
     public bool HasMember(Guid userId) => _members.Any(m => m.UserId == userId);
+
+    /// <summary>Код региона по первым двум цифрам ИНН.</summary>
+    public string RegionCode => Inn[..2];
 
     /// <summary>Полных месяцев с даты регистрации на указанную дату.</summary>
     public int GetBusinessAgeMonths(DateOnly today)

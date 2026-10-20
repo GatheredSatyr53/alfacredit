@@ -165,6 +165,11 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(512)")
                         .HasColumnName("address");
 
+                    b.Property<decimal?>("AnnualExpenses")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("annual_expenses");
+
                     b.Property<decimal>("AnnualRevenue")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
@@ -206,6 +211,11 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
+
+                    b.Property<decimal?>("NetProfit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("net_profit");
 
                     b.Property<string>("Ogrn")
                         .IsRequired()

@@ -18,7 +18,6 @@ public static class ServiceCollectionExtensions
             .AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-                options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
             });
 
         // Ошибки валидации входных данных: ключи полей в camelCase, как в JSON, сообщения по-русски

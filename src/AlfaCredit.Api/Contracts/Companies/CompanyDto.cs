@@ -15,6 +15,8 @@ namespace AlfaCredit.Api.Contracts.Companies;
 /// <param name="HeadName">Руководитель.</param>
 /// <param name="TaxRegime">Режим налогообложения.</param>
 /// <param name="AnnualRevenue">Выручка за 12 месяцев, ₽.</param>
+/// <param name="AnnualExpenses">Расходы за 12 месяцев, ₽; null, если учёт не ведётся.</param>
+/// <param name="NetProfit">Чистая прибыль за 12 месяцев, ₽; отрицательная при убытке, null, если неизвестна.</param>
 /// <param name="MonthlyDebtPayments">Текущие ежемесячные платежи по обязательствам, ₽.</param>
 /// <param name="EmployeesCount">Число сотрудников.</param>
 /// <param name="MyRole">Роль текущего пользователя в компании; пусто для сотрудников банка.</param>
@@ -31,6 +33,8 @@ public sealed record CompanyDto(
     string HeadName,
     TaxRegime TaxRegime,
     decimal AnnualRevenue,
+    decimal? AnnualExpenses,
+    decimal? NetProfit,
     decimal MonthlyDebtPayments,
     int EmployeesCount,
     CompanyMemberRole? MyRole);

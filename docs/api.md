@@ -108,7 +108,8 @@
     "registeredAt": "2019-03-12", "businessAgeMonths": 91,
     "address": "Москва, ул. Садовая, д. 12", "headName": "Иванова Мария Сергеевна",
     "taxRegime": "Osno",
-    "annualRevenue": 48000000, "monthlyDebtPayments": 150000, "employeesCount": 24,
+    "annualRevenue": 48000000, "annualExpenses": 40800000, "netProfit": 7200000,
+    "monthlyDebtPayments": 150000, "employeesCount": 24,
     "myRole": "Director"
   }
 ]

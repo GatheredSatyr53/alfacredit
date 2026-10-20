@@ -34,6 +34,8 @@ erDiagram
         varchar head_name
         varchar tax_regime
         numeric annual_revenue
+        numeric annual_expenses "null, если учёт не ведётся"
+        numeric net_profit "null или отрицательная при убытке"
         numeric monthly_debt_payments
         int employees_count
         timestamptz created_at
