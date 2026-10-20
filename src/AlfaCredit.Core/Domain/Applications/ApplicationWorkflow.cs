@@ -16,12 +16,14 @@ public static class ApplicationWorkflow
             [ApplicationStatus.Submitted] =
             [
                 new(ApplicationStatus.Validating, ActorType.System),
+                new(ApplicationStatus.ManualReview, ActorType.System),
                 new(ApplicationStatus.Cancelled, ActorType.Client),
             ],
             [ApplicationStatus.Validating] =
             [
                 new(ApplicationStatus.Enriching, ActorType.System),
                 new(ApplicationStatus.NeedsClarification, ActorType.System, ActorType.Manager),
+                new(ApplicationStatus.ManualReview, ActorType.System),
                 new(ApplicationStatus.Cancelled, ActorType.Client),
             ],
             [ApplicationStatus.NeedsClarification] =
@@ -37,6 +39,7 @@ public static class ApplicationWorkflow
             [ApplicationStatus.Scoring] =
             [
                 new(ApplicationStatus.Deciding, ActorType.System),
+                new(ApplicationStatus.ManualReview, ActorType.System),
             ],
             [ApplicationStatus.Deciding] =
             [

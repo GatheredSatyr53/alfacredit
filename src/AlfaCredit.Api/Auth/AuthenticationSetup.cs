@@ -24,6 +24,21 @@ public static class AuthenticationSetup
             {
                 var jwt = jwtOptions.Value;
                 bearer.MapInboundClaims = false;
+
+                // SignalR из браузера не умеет заголовки: токен приходит в query-параметре access_token
+                bearer.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var token = context.Request.Query["access_token"];
+                        if (!string.IsNullOrEmpty(token) && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = token;
+                        }
+
+                        return Task.CompletedTask;
+                    },
+                };
                 bearer.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,

@@ -1,4 +1,7 @@
 using AlfaCredit.Core.Domain.Applications;
+using AlfaCredit.Core.Domain.Checks;
+using AlfaCredit.Core.Domain.Decisions;
+using AlfaCredit.Core.Domain.Scoring;
 using AlfaCredit.Core.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -56,6 +59,26 @@ internal sealed class CreditApplicationConfiguration : IEntityTypeConfiguration<
             .HasForeignKey(h => h.ApplicationId)
             .OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(a => a.History).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(a => a.Checks).WithOne().HasForeignKey(c => c.ApplicationId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(a => a.Checks).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(a => a.ScoringResults).WithOne().HasForeignKey(s => s.ApplicationId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(a => a.ScoringResults).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(a => a.Decisions).WithOne().HasForeignKey(d => d.ApplicationId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(a => a.Decisions).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(a => a.Offers).WithOne().HasForeignKey(o => o.ApplicationId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(a => a.Offers).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        // Вычисляемые свойства агрегата, не колонки и не навигации
+        builder.Ignore(a => a.LatestScoring);
+        builder.Ignore(a => a.LatestDecision);
+        builder.Ignore(a => a.FinalDecision);
+        builder.Ignore(a => a.CurrentOffer);
+        builder.Ignore(a => a.ChecksSnapshot);
+        builder.Ignore(a => a.IsTerminal);
 
         builder.HasIndex(a => new { a.CompanyId, a.CreatedAt });
         builder.HasIndex(a => a.Status);

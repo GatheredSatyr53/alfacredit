@@ -1,7 +1,8 @@
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using AlfaCredit.Api.Realtime;
+using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Infrastructure.Persistence;
-using AlfaCredit.Infrastructure.Persistence.Seeding;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -31,18 +32,16 @@ public static class ServiceCollectionExtensions
         services.AddExceptionHandler<DomainExceptionHandler>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
 
-        services.AddOptions<DatabaseOptions>()
-            .Bind(configuration.GetSection(DatabaseOptions.SectionName));
-        services.AddOptions<SeedOptions>()
-            .Bind(configuration.GetSection(SeedOptions.SectionName))
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
+        // AllowCredentials нужен SignalR-клиенту в браузере; origin'ы перечислены явно
         services.AddCors(options => options.AddDefaultPolicy(policy => policy
             .WithOrigins(ParseOrigins(configuration["Cors:Origins"]))
             .AllowAnyHeader()
             .AllowAnyMethod()
+            .AllowCredentials()
             .WithExposedHeaders("Location")));
+
+        services.AddSignalR();
+        services.AddSingleton<IApplicationNotifier, SignalRApplicationNotifier>();
 
         // Защита от перебора паролей: лимит попыток входа на один IP
         services.AddRateLimiter(options =>

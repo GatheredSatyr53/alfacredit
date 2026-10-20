@@ -40,6 +40,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Seed:Enabled", "true");
         builder.UseSetting("Seed:DemoPassword", DemoPassword);
         builder.UseSetting("Swagger:Enabled", "true");
+        // Конвейер в тестах работает быстро, но с секундной паузой: отмена заявки сразу после создания остаётся возможной
+        builder.UseSetting("Processing:StageDelaySeconds", "1");
+        builder.UseSetting("Processing:PollIntervalMs", "100");
+        builder.UseSetting("Simulators:LatencyMs", "0");
+        builder.UseSetting("Simulators:FailureRate", "0");
     }
 }
 

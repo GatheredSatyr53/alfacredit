@@ -216,6 +216,165 @@
         ]
       }
     },
+    "/api/applications/{id}/offer/accept": {
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Принять предложение банка по одобренной заявке.",
+        "description": "Доступно в статусах Approved и ApprovedWithConditions, пока предложение действует. Переводит заявку к подписанию договора.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Предложение принято, возвращается актуальное состояние заявки.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа к заявке.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Предложения нет, оно уже закрыто или срок истёк.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/applications/{id}/offer/decline": {
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Отклонить предложение банка.",
+        "description": "Тело запроса необязательно. Заявка переходит в статус OfferDeclined.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclineOfferRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclineOfferRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclineOfferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Предложение отклонено.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа к заявке.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Предложения нет, оно уже закрыто или срок истёк.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/api/applications/{id}/cancel": {
       "post": {
         "tags": [
@@ -510,6 +669,182 @@
         ]
       }
     },
+    "/api/feed": {
+      "get": {
+        "tags": [
+          "Feed"
+        ],
+        "summary": "События ленты от новых к старым.",
+        "parameters": [
+          {
+            "name": "unreadOnly",
+            "in": "query",
+            "description": "Только непрочитанные.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Номер страницы, с 1.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Размер страницы, 1..100.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Страница событий.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedItemDtoPagedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          },
+          "403": {
+            "description": "Недостаточно прав"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/feed/unread-count": {
+      "get": {
+        "tags": [
+          "Feed"
+        ],
+        "summary": "Число непрочитанных событий для бейджа в шапке.",
+        "responses": {
+          "200": {
+            "description": "Счётчик.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          },
+          "403": {
+            "description": "Недостаточно прав"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/feed/{id}/read": {
+      "post": {
+        "tags": [
+          "Feed"
+        ],
+        "summary": "Отметить событие прочитанным.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Событие обновлено.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedItemDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Событие не найдено или принадлежит другому пользователю.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          },
+          "403": {
+            "description": "Недостаточно прав"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/feed/read-all": {
+      "post": {
+        "tags": [
+          "Feed"
+        ],
+        "summary": "Отметить все события прочитанными.",
+        "responses": {
+          "200": {
+            "description": "Сколько событий отмечено.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          },
+          "403": {
+            "description": "Недостаточно прав"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/api/products": {
       "get": {
         "tags": [
@@ -665,7 +1000,24 @@
             "items": {
               "type": "string"
             },
-            "description": "Действия, доступные текущему пользователю: cancel, acceptOffer, declineOffer, signContract, answerClarification и другие."
+            "description": "Действия, доступные текущему пользователю: cancel, acceptOffer, declineOffer и другие."
+          },
+          "decision": {
+            "$ref": "#/components/schemas/DecisionDto"
+          },
+          "offer": {
+            "$ref": "#/components/schemas/OfferDto"
+          },
+          "scoring": {
+            "$ref": "#/components/schemas/ScoringDto"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalCheckDto"
+            },
+            "description": "Внешние проверки; заполняются только для сотрудников банка.",
+            "nullable": true
           },
           "history": {
             "type": "array",
@@ -676,7 +1028,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Кредитная заявка целиком: параметры, статус, доступные действия и история."
+        "description": "Кредитная заявка целиком: параметры, статус, решение, предложение, доступные действия и история."
       },
       "ApplicationHistoryEntryDto": {
         "type": "object",
@@ -882,6 +1234,22 @@
         "additionalProperties": false,
         "description": "Отмена заявки клиентом. Тело запроса необязательно."
       },
+      "CheckSource": {
+        "enum": [
+          "Egrul",
+          "Fns",
+          "CreditBureau",
+          "Fssp"
+        ],
+        "type": "string"
+      },
+      "CheckStatus": {
+        "enum": [
+          "Succeeded",
+          "Failed"
+        ],
+        "type": "string"
+      },
       "CompanyDto": {
         "type": "object",
         "properties": {
@@ -1044,6 +1412,242 @@
         "additionalProperties": false,
         "description": "Результат создания заявки."
       },
+      "DecisionActor": {
+        "enum": [
+          "Auto",
+          "Manager"
+        ],
+        "type": "string"
+      },
+      "DecisionDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/DecisionType"
+          },
+          "isFinal": {
+            "type": "boolean",
+            "description": "Окончательное решение; для ManualReview false."
+          },
+          "decidedBy": {
+            "$ref": "#/components/schemas/DecisionActor"
+          },
+          "recommendedType": {
+            "$ref": "#/components/schemas/DecisionType"
+          },
+          "approvedAmount": {
+            "type": "number",
+            "description": "Одобренная сумма, ₽.",
+            "format": "double",
+            "nullable": true
+          },
+          "approvedTermMonths": {
+            "type": "integer",
+            "description": "Одобренный срок, мес.",
+            "format": "int32",
+            "nullable": true
+          },
+          "interestRate": {
+            "type": "number",
+            "description": "Годовая ставка, %.",
+            "format": "double",
+            "nullable": true
+          },
+          "monthlyPayment": {
+            "type": "number",
+            "description": "Ежемесячный платёж, ₽.",
+            "format": "double",
+            "nullable": true
+          },
+          "conditions": {
+            "type": "string",
+            "description": "Изменённые условия, текстом.",
+            "nullable": true
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DecisionReasonDto"
+            },
+            "description": "Причины решения с объяснением для клиента."
+          },
+          "decidedAt": {
+            "type": "string",
+            "description": "Когда принято (UTC).",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Кредитное решение по заявке."
+      },
+      "DecisionReasonDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Причина решения."
+      },
+      "DecisionType": {
+        "enum": [
+          "Approved",
+          "ApprovedWithConditions",
+          "Rejected",
+          "ManualReview"
+        ],
+        "type": "string"
+      },
+      "DeclineOfferRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string",
+            "description": "Причина отказа, до 1000 символов.",
+            "nullable": true,
+            "example": "Нашли предложение с меньшей ставкой"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Отказ от предложения банка. Тело запроса необязательно."
+      },
+      "ExternalCheckDto": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/CheckSource"
+          },
+          "sourceTitle": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CheckStatus"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "riskFlags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attempts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Результат внешней проверки. Виден только сотрудникам банка."
+      },
+      "FeedItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Идентификатор.",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/FeedItemType"
+          },
+          "title": {
+            "type": "string",
+            "description": "Заголовок."
+          },
+          "body": {
+            "type": "string",
+            "description": "Текст."
+          },
+          "applicationId": {
+            "type": "string",
+            "description": "Связанная заявка, если есть.",
+            "format": "uuid",
+            "nullable": true
+          },
+          "link": {
+            "type": "string",
+            "description": "Куда вести из ленты, относительный путь кабинета.",
+            "nullable": true
+          },
+          "isRead": {
+            "type": "boolean",
+            "description": "Прочитано."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Когда (UTC).",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Событие ленты пользователя."
+      },
+      "FeedItemDtoPagedResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeedItemDto"
+            },
+            "description": "Элементы текущей страницы."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Номер страницы, с 1.",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Размер страницы.",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "description": "Всего элементов по фильтру.",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "Всего страниц.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Страница результатов."
+      },
+      "FeedItemType": {
+        "enum": [
+          "StatusChanged",
+          "ClarificationRequested",
+          "OfferReady",
+          "Rejected",
+          "ManualReview",
+          "ContractReady",
+          "Disbursed",
+          "Recommendation",
+          "News"
+        ],
+        "type": "string"
+      },
       "LegalForm": {
         "enum": [
           "Ooo",
@@ -1107,6 +1711,61 @@
         },
         "additionalProperties": false,
         "description": "Результат успешного входа."
+      },
+      "OfferDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Идентификатор предложения.",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Сумма, ₽.",
+            "format": "double"
+          },
+          "termMonths": {
+            "type": "integer",
+            "description": "Срок, мес.",
+            "format": "int32"
+          },
+          "interestRate": {
+            "type": "number",
+            "description": "Годовая ставка, %.",
+            "format": "double"
+          },
+          "monthlyPayment": {
+            "type": "number",
+            "description": "Ежемесячный платёж, ₽.",
+            "format": "double"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "До какого момента действует (UTC).",
+            "format": "date-time"
+          },
+          "response": {
+            "$ref": "#/components/schemas/OfferResponse"
+          },
+          "respondedAt": {
+            "type": "string",
+            "description": "Когда клиент ответил (UTC).",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Предложение банка по одобренной заявке."
+      },
+      "OfferResponse": {
+        "enum": [
+          "Pending",
+          "Accepted",
+          "Declined",
+          "Expired"
+        ],
+        "type": "string"
       },
       "ProblemDetails": {
         "type": "object",
@@ -1208,6 +1867,88 @@
         ],
         "type": "string"
       },
+      "RiskGrade": {
+        "enum": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E"
+        ],
+        "type": "string"
+      },
+      "ScoringDto": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "grade": {
+            "$ref": "#/components/schemas/RiskGrade"
+          },
+          "probabilityOfDefault": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "factors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoringFactorDto"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "modelVersion": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ScoringSource"
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Результат скоринга. Виден только сотрудникам банка."
+      },
+      "ScoringFactorDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "value": {
+            "type": "string"
+          },
+          "clientExplanation": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Фактор скоринга."
+      },
+      "ScoringSource": {
+        "enum": [
+          "Rules",
+          "External",
+          "RulesFallback"
+        ],
+        "type": "string"
+      },
       "TaxRegime": {
         "enum": [
           "Osno",
@@ -1216,6 +1957,17 @@
           "Patent"
         ],
         "type": "string"
+      },
+      "UnreadCountDto": {
+        "type": "object",
+        "properties": {
+          "unread": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Число непрочитанных событий."
       },
       "UserDto": {
         "type": "object",
@@ -1303,6 +2055,10 @@
     {
       "name": "Companies",
       "description": "Компании клиента. Клиент видит только свои компании, сотрудник банка все."
+    },
+    {
+      "name": "Feed",
+      "description": "Лента событий пользователя: статусы заявок, решения, предложения, запросы банка."
     },
     {
       "name": "Products",
