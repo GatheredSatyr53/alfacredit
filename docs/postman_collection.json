@@ -1,21 +1,55 @@
 {
   "info": {
     "name": "AlfaCredit API",
-    "description": "Кредитный конвейер для малого и микробизнеса. Переменные: baseUrl, login, password; token заполняется автоматически после запроса Login.",
+    "description": "Кредитный конвейер для малого и микробизнеса. Переменные: baseUrl, login, password; token, companyId и applicationId заполняются автоматически после запросов Login, My companies и Create application.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" },
-    { "key": "login", "value": "manager" },
-    { "key": "password", "value": "Demo123!" },
-    { "key": "token", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "login",
+      "value": "client_good"
+    },
+    {
+      "key": "password",
+      "value": "Demo123!"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "companyId",
+      "value": ""
+    },
+    {
+      "key": "applicationId",
+      "value": ""
+    }
   ],
   "item": [
     {
       "name": "Health",
       "item": [
-        { "name": "Live", "request": { "method": "GET", "url": "{{baseUrl}}/health/live" } },
-        { "name": "Ready", "request": { "method": "GET", "url": "{{baseUrl}}/health/ready" } }
+        {
+          "name": "Live",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health/live"
+          }
+        },
+        {
+          "name": "Ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health/ready"
+          }
+        }
       ]
     },
     {
@@ -23,6 +57,20 @@
       "item": [
         {
           "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{login}}\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          },
           "event": [
             {
               "listen": "test",
@@ -30,34 +78,205 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "const body = pm.response.json();",
-                  "pm.collectionVariables.set('token', body.accessToken);"
+                  "pm.collectionVariables.set('token', pm.response.json().accessToken);"
                 ]
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{baseUrl}}/api/v1/auth/login",
-            "body": { "mode": "raw", "raw": "{\n  \"login\": \"{{login}}\",\n  \"password\": \"{{password}}\"\n}" }
-          }
+          ]
         },
         {
           "name": "Me",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": "{{baseUrl}}/api/v1/auth/me"
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/me"
           }
         },
         {
           "name": "Login with wrong password (401)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{baseUrl}}/api/v1/auth/login",
-            "body": { "mode": "raw", "raw": "{\n  \"login\": \"client_good\",\n  \"password\": \"wrong-password\"\n}" }
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"client_good\",\n  \"password\": \"wrong-password\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/products"
+          }
+        },
+        {
+          "name": "Product by code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/working-capital"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Companies",
+      "item": [
+        {
+          "name": "My companies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/companies"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('companyId', pm.response.json()[0].id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Applications",
+      "item": [
+        {
+          "name": "Statuses catalog",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/applications/statuses"
+          }
+        },
+        {
+          "name": "Create application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"productCode\": \"working-capital\",\n  \"amount\": 1500000,\n  \"termMonths\": 12,\n  \"purpose\": \"WorkingCapital\",\n  \"purposeDescription\": \"Закупка товара к сезону\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('applicationId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get application",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}"
+          }
+        },
+        {
+          "name": "List my applications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications?page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "Cancel application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications/{{applicationId}}/cancel",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Нашли другой источник финансирования\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Validation error (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/applications",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"productCode\": \"overdraft\",\n  \"amount\": 50000000,\n  \"termMonths\": 60,\n  \"purpose\": \"Equipment\"\n}"
+            }
           }
         }
       ]

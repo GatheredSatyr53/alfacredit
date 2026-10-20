@@ -1,6 +1,8 @@
 using AlfaCredit.Api.Auth;
 using AlfaCredit.Api.Setup;
 using AlfaCredit.Core.Abstractions;
+using AlfaCredit.Core.Common;
+using AlfaCredit.Core.Features.Applications;
 using AlfaCredit.Core.Features.Auth;
 using AlfaCredit.Infrastructure;
 using AlfaCredit.Infrastructure.Persistence;
@@ -42,12 +44,17 @@ try
     builder.Services.AddApiAuthentication(builder.Configuration);
 
     builder.Services.AddScoped<AuthService>();
+    builder.Services.AddScoped<ApplicationService>();
     builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 
     var app = builder.Build();
 
     app.UseSerilogRequestLogging();
-    app.UseExceptionHandler();
+    // Доменные ошибки (400/403/404/409) ожидаемы и не засоряют лог стек-трейсами
+    app.UseExceptionHandler(new ExceptionHandlerOptions
+    {
+        SuppressDiagnosticsCallback = context => context.Exception is DomainException,
+    });
     app.UseStatusCodePages();
 
     if (app.Configuration.GetValue<bool>("Swagger:Enabled"))

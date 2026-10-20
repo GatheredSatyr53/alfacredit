@@ -15,7 +15,7 @@ public sealed class AuthEndpointsTests(ApiFactory factory)
     {
         using var client = factory.CreateClient();
 
-        var loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new { login = "manager", password = ApiFactory.DemoPassword });
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new { login = "manager", password = ApiFactory.DemoPassword });
 
         loginResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
         var login = await loginResponse.Content.ReadFromJsonAsync<JsonElement>();
@@ -24,7 +24,7 @@ public sealed class AuthEndpointsTests(ApiFactory factory)
         login.GetProperty("user").GetProperty("role").GetString().ShouldBe("Manager");
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var meResponse = await client.GetAsync("/api/v1/auth/me");
+        var meResponse = await client.GetAsync("/api/auth/me");
 
         meResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
         var me = await meResponse.Content.ReadFromJsonAsync<JsonElement>();
@@ -37,7 +37,7 @@ public sealed class AuthEndpointsTests(ApiFactory factory)
     {
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/v1/auth/login", new { login = "client_good", password = "wrong-password" });
+        var response = await client.PostAsJsonAsync("/api/auth/login", new { login = "client_good", password = "wrong-password" });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -51,7 +51,7 @@ public sealed class AuthEndpointsTests(ApiFactory factory)
     {
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/v1/auth/login", new { login = "", password = "" });
+        var response = await client.PostAsJsonAsync("/api/auth/login", new { login = "", password = "" });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -63,7 +63,7 @@ public sealed class AuthEndpointsTests(ApiFactory factory)
     {
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync("/api/v1/auth/me");
+        var response = await client.GetAsync("/api/auth/me");
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
@@ -74,7 +74,7 @@ public sealed class AuthEndpointsTests(ApiFactory factory)
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.invalid");
 
-        var response = await client.GetAsync("/api/v1/auth/me");
+        var response = await client.GetAsync("/api/auth/me");
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
