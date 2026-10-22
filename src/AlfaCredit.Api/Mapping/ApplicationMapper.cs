@@ -73,8 +73,11 @@ public static class ApplicationMapper
         scoring.ProbabilityOfDefault,
         scoring.Factors.Select(f => new ScoringFactorDto(f.Code, f.Title, f.Impact, f.Value, f.ClientExplanation)).ToArray(),
         scoring.Warnings,
+        scoring.MissingData,
         scoring.ModelVersion,
         scoring.Source,
+        scoring.RequestId,
+        scoring.DurationMs,
         scoring.ComputedAt);
 
     private static ExternalCheckDto ToDto(ExternalCheck check) => new(

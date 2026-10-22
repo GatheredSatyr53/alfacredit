@@ -9,6 +9,7 @@ namespace AlfaCredit.Infrastructure.Processing;
 
 /// <summary>
 /// Фоновый исполнитель конвейера: несколько циклов забирают задания из базы (SKIP LOCKED) и выполняют этапы.
+/// При старте возвращает в очередь задания, прерванные предыдущей остановкой, поэтому обработка продолжается после перезапуска.
 /// Отдельный цикл закрывает просроченные предложения.
 /// </summary>
 public sealed class ProcessingWorker(
@@ -20,13 +21,38 @@ public sealed class ProcessingWorker(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var settings = options.Value;
-        logger.LogInformation("Processing worker started: {Workers} loops, poll {Poll} ms, stage delay {Delay} s", settings.WorkerCount, settings.PollIntervalMs, settings.StageDelaySeconds);
+        logger.LogInformation(
+            "Processing worker started: {Workers} loops, poll {Poll} ms, stage delay {Delay} s, lease {Lease} s",
+            settings.WorkerCount, settings.PollIntervalMs, settings.StageDelaySeconds, settings.LeaseSeconds);
+
+        await RequeueInterruptedAsync(stoppingToken);
 
         var loops = Enumerable.Range(0, settings.WorkerCount)
             .Select(index => RunJobLoopAsync(index, stoppingToken))
             .Append(RunOfferExpiryLoopAsync(stoppingToken));
 
         await Task.WhenAll(loops);
+    }
+
+    private async Task RequeueInterruptedAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var jobs = scope.ServiceProvider.GetRequiredService<IProcessingJobRepository>();
+            var count = await jobs.RequeueInterruptedAsync(clock.GetUtcNow(), stoppingToken);
+            if (count > 0)
+            {
+                logger.LogInformation("Requeued {Count} job(s) interrupted by the previous shutdown; processing resumes", count);
+            }
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not requeue interrupted jobs; they will be picked up when their lease expires");
+        }
     }
 
     private async Task RunJobLoopAsync(int index, CancellationToken stoppingToken)
@@ -59,7 +85,7 @@ public sealed class ProcessingWorker(
         await using (var scope = scopeFactory.CreateAsyncScope())
         {
             var jobs = scope.ServiceProvider.GetRequiredService<IProcessingJobRepository>();
-            var job = await jobs.ClaimNextAsync(clock.GetUtcNow(), stoppingToken);
+            var job = await jobs.ClaimNextAsync(clock.GetUtcNow(), options.Value.Lease, stoppingToken);
             if (job is null)
             {
                 return false;
@@ -74,6 +100,7 @@ public sealed class ProcessingWorker(
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
+                // Остановка сервиса: задание остаётся Running и при следующем старте возвращается в очередь
                 throw;
             }
             catch (Exception ex)

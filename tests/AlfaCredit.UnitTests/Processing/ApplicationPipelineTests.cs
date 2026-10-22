@@ -1,3 +1,4 @@
+using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Core.Domain.Applications;
 using AlfaCredit.Core.Domain.Checks;
 using AlfaCredit.Core.Domain.Companies;
@@ -5,6 +6,7 @@ using AlfaCredit.Core.Domain.Decisions;
 using AlfaCredit.Core.Domain.Feed;
 using AlfaCredit.Core.Domain.Processing;
 using AlfaCredit.Core.Domain.Products;
+using AlfaCredit.Core.Domain.Scoring;
 using AlfaCredit.Core.Domain.Users;
 using AlfaCredit.Core.Features.Decisions;
 using AlfaCredit.Core.Features.Feed;
@@ -20,6 +22,8 @@ namespace AlfaCredit.UnitTests.Processing;
 
 public sealed class ApplicationPipelineTests
 {
+    private static readonly TimeSpan Lease = TimeSpan.FromMinutes(2);
+
     private readonly Guid _clientId = Guid.NewGuid();
     private readonly User _manager = User.Create("manager", "hash", "Алексей Петров", UserRole.Manager, TestData.Now);
     private readonly InMemoryApplicationRepository _applications = new();
@@ -45,7 +49,7 @@ public sealed class ApplicationPipelineTests
         ]);
         application.Checks.Count.ShouldBe(4);
         application.Checks.ShouldAllBe(c => c.Status == CheckStatus.Succeeded);
-        application.LatestScoring!.Grade.ShouldBe(Core.Domain.Scoring.RiskGrade.A);
+        application.LatestScoring!.Grade.ShouldBe(RiskGrade.A);
         application.FinalDecision!.Type.ShouldBe(DecisionType.Approved);
         application.CurrentOffer.ShouldNotBeNull();
         application.CurrentOffer!.Amount.ShouldBe(1_500_000);
@@ -125,6 +129,98 @@ public sealed class ApplicationPipelineTests
         _jobs.Items.ShouldHaveSingleItem().Status.ShouldBe(ProcessingJobStatus.Done);
     }
 
+    [Fact]
+    public async Task Scoring_result_keeps_request_id_duration_and_missing_inputs()
+    {
+        var application = Submit(amount: 1_500_000, termMonths: 12, netProfit: null);
+
+        await RunPipelineAsync(application);
+
+        var scoring = application.LatestScoring.ShouldNotBeNull();
+        scoring.Source.ShouldBe(ScoringSource.Rules);
+        scoring.ModelVersion.ShouldBe(RuleBasedScoringService.ModelVersion);
+        scoring.RequestId.ShouldNotBeNull();
+        scoring.DurationMs.ShouldBeGreaterThanOrEqualTo(0);
+        scoring.MissingData.ShouldBe(["company.financials.net_profit_rub"]);
+        scoring.Warnings.ShouldContain("net_profit_missing");
+        scoring.ComputedAt.ShouldBe(TestData.Now);
+    }
+
+    [Fact]
+    public async Task External_scoring_outcome_is_stored_with_its_source_and_whole_ruble_request()
+    {
+        var external = new FakeScoringService(new ScoringOutcome(
+            82,
+            RiskGrade.A,
+            0.04m,
+            [new ScoringFactor("credit_history", "Кредитная история", 15, "без просрочек", "Просрочек по кредитам нет.")],
+            ["model_warning"],
+            ["company.history"],
+            "lgbm-test",
+            ScoringSource.External));
+        var application = Submit(amount: 1_500_000, termMonths: 12, netProfit: null);
+
+        await RunPipelineAsync(application, external);
+
+        external.Calls.ShouldBe(1);
+        var sent = external.LastRequest.ShouldNotBeNull();
+        sent.Application.AmountRub.ShouldBe(1_500_000);
+        sent.Application.EstimatedMonthlyPaymentRub.ShouldBe(138_593, "аннуитет по базовой ставке 19.5 %, округлённый до рубля");
+        sent.Company.Financials.NetProfitRub.ShouldBeNull();
+        sent.Checks.CreditBureau.ShouldNotBeNull();
+
+        var scoring = application.LatestScoring.ShouldNotBeNull();
+        scoring.Source.ShouldBe(ScoringSource.External);
+        scoring.ModelVersion.ShouldBe("lgbm-test");
+        scoring.Score.ShouldBe(82);
+        scoring.Grade.ShouldBe(RiskGrade.A);
+        scoring.RequestId.ShouldBe(sent.RequestId);
+        scoring.Warnings.ShouldBe(["model_warning"]);
+        scoring.MissingData.ShouldBe(["company.financials.net_profit_rub", "company.history"], "пропуски backend объединяются с пропусками сервиса");
+        application.Status.ShouldBe(ApplicationStatus.Approved);
+        application.LatestDecision!.Reasons.Select(r => r.Code).ShouldContain("factor_credit_history");
+    }
+
+    [Fact]
+    public async Task Decide_stage_resumes_after_restart_when_application_is_already_deciding()
+    {
+        var application = Submit(amount: 1_500_000, termMonths: 12);
+        var pipeline = CreatePipeline();
+        await RunJobsAsync(pipeline, 3);
+        application.Status.ShouldBe(ApplicationStatus.Scoring);
+
+        // Сервис остановили после сохранения статуса «Принятие решения», но до самого решения; задание вернулось в очередь
+        application.BeginDeciding(_clock.GetUtcNow());
+        await RunPipelineAsync(application);
+
+        application.Status.ShouldBe(ApplicationStatus.Approved);
+        application.History.Count(h => h.ToStatus == ApplicationStatus.Deciding).ShouldBe(1);
+        application.FinalDecision.ShouldNotBeNull();
+        application.CurrentOffer.ShouldNotBeNull();
+        _jobs.Items.ShouldAllBe(j => j.Status == ProcessingJobStatus.Done);
+    }
+
+    [Fact]
+    public async Task Interrupted_job_is_requeued_and_finishes_the_stage()
+    {
+        var application = Submit(amount: 1_500_000, termMonths: 12);
+        var pipeline = CreatePipeline();
+        await RunJobsAsync(pipeline, 1);
+
+        // Воркер забрал задание Enrich и «умер»: статус заявки не изменился, задание осталось Running
+        var interrupted = (await _jobs.ClaimNextAsync(_clock.GetUtcNow(), Lease, CancellationToken.None)).ShouldNotBeNull();
+        interrupted.Stage.ShouldBe(ProcessingStage.Enrich);
+        (await _jobs.ClaimNextAsync(_clock.GetUtcNow(), Lease, CancellationToken.None)).ShouldBeNull("задание в аренде, повторно не выдаётся");
+
+        (await _jobs.RequeueInterruptedAsync(_clock.GetUtcNow(), CancellationToken.None)).ShouldBe(1);
+        await RunPipelineAsync(application);
+
+        application.Status.ShouldBe(ApplicationStatus.Approved);
+        application.Checks.Count.ShouldBe(4, "обогащение выполнено один раз");
+        interrupted.Status.ShouldBe(ProcessingJobStatus.Done);
+        interrupted.Attempts.ShouldBe(1, "прерывание не считается неудачной попыткой");
+    }
+
     private CreditApplication Submit(decimal amount, int termMonths, decimal revenue = 48_000_000, decimal? netProfit = 7_200_000, decimal monthlyDebtPayments = 150_000)
     {
         var company = TestData.Company(memberUserId: _clientId, annualRevenue: revenue, netProfit: netProfit, monthlyDebtPayments: monthlyDebtPayments);
@@ -134,12 +230,12 @@ public sealed class ApplicationPipelineTests
         return application;
     }
 
-    private async Task RunPipelineAsync(CreditApplication application)
+    private async Task RunPipelineAsync(CreditApplication application, IScoringService? scoring = null)
     {
-        var pipeline = CreatePipeline();
+        var pipeline = CreatePipeline(scoring);
         for (var guard = 0; guard < 10; guard++)
         {
-            var job = await _jobs.ClaimNextAsync(_clock.GetUtcNow(), CancellationToken.None);
+            var job = await _jobs.ClaimNextAsync(_clock.GetUtcNow(), Lease, CancellationToken.None);
             if (job is null)
             {
                 return;
@@ -148,10 +244,19 @@ public sealed class ApplicationPipelineTests
             await pipeline.ExecuteAsync(job, CancellationToken.None);
         }
 
-        throw new InvalidOperationException("Pipeline did not finish within 10 jobs.");
+        throw new InvalidOperationException($"Pipeline for {application.Number} did not finish within 10 jobs.");
     }
 
-    private ApplicationPipeline CreatePipeline()
+    private async Task RunJobsAsync(ApplicationPipeline pipeline, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var job = (await _jobs.ClaimNextAsync(_clock.GetUtcNow(), Lease, CancellationToken.None)).ShouldNotBeNull();
+            await pipeline.ExecuteAsync(job, CancellationToken.None);
+        }
+    }
+
+    private ApplicationPipeline CreatePipeline(IScoringService? scoring = null)
     {
         var policyOptions = new DecisionPolicyOptions();
         return new ApplicationPipeline(
@@ -161,7 +266,7 @@ public sealed class ApplicationPipelineTests
             _sources,
             _sources,
             _sources,
-            new RuleBasedScoringService(),
+            scoring ?? new RuleBasedScoringService(),
             new DecisionPolicy(policyOptions),
             new FeedService(_feed, new InMemoryUsersByRole(_manager), _clock),
             _notifier,

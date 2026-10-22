@@ -9,3 +9,4 @@ docs/
 tests/
 .env
 *.md
+scoring/

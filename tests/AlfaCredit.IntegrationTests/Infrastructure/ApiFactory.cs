@@ -6,7 +6,7 @@ using Testcontainers.PostgreSql;
 namespace AlfaCredit.IntegrationTests.Infrastructure;
 
 /// <summary>Поднимает API в памяти поверх настоящего PostgreSQL в контейнере, с миграциями и seed-данными.</summary>
-public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string DemoPassword = "Demo123!";
 
@@ -20,15 +20,28 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         {
             await _database.StartAsync();
         }
+
+        await StartDependenciesAsync();
     }
 
     async Task IAsyncLifetime.DisposeAsync()
     {
         await base.DisposeAsync();
+        await StopDependenciesAsync();
         if (_database is not null)
         {
             await _database.DisposeAsync();
         }
+    }
+
+    /// <summary>Дополнительные зависимости стенда, например заглушка сервиса скоринга.</summary>
+    protected virtual Task StartDependenciesAsync() => Task.CompletedTask;
+
+    protected virtual Task StopDependenciesAsync() => Task.CompletedTask;
+
+    /// <summary>Настройки, которыми отдельный стенд дополняет или переопределяет базовые.</summary>
+    protected virtual void ConfigureTestSettings(IWebHostBuilder builder)
+    {
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -45,6 +58,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Processing:PollIntervalMs", "100");
         builder.UseSetting("Simulators:LatencyMs", "0");
         builder.UseSetting("Simulators:FailureRate", "0");
+        ConfigureTestSettings(builder);
     }
 }
 

@@ -127,5 +127,10 @@ public sealed class DecisionPolicyTests
         new FsspResult(0, 0));
 
     private static ScoringResult Scoring(CreditApplication application, int score, RiskGrade grade) =>
-        ScoringResult.Create(application.Id, score, grade, 0.05m, [new ScoringFactor("debt_load", "Долговая нагрузка", -5, "0.5", "Платежи занимают половину прибыли.")], [], "rules-v1", ScoringSource.Rules, TestData.Now);
+        ScoringResult.Create(
+            application.Id,
+            Guid.CreateVersion7(),
+            new ScoringOutcome(score, grade, 0.05m, [new ScoringFactor("debt_load", "Долговая нагрузка", -5, "0.5", "Платежи занимают половину прибыли.")], [], [], "rules-v1", ScoringSource.Rules),
+            durationMs: 0,
+            TestData.Now);
 }

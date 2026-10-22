@@ -4,8 +4,50 @@ using AlfaCredit.Core.Domain.Products;
 
 namespace AlfaCredit.Core.Features.Scoring;
 
-/// <summary>Запрос к сервису скоринга. Структура повторяет docs/scoring-contract.md; в JSON поля в snake_case.</summary>
-public sealed record ScoringRequest(Guid RequestId, ScoringApplication Application, ScoringCompany Company, ScoringChecks Checks);
+/// <summary>Запрос к сервису скоринга. Структура повторяет docs/scoring-contract.md; в JSON поля в snake_case, деньги в целых рублях.</summary>
+public sealed record ScoringRequest(Guid RequestId, ScoringApplication Application, ScoringCompany Company, ScoringChecks Checks)
+{
+    /// <summary>Пути полей запроса, отправленных как null: сервис скоринга и менеджер видят, каких данных не хватало.</summary>
+    public IReadOnlyList<string> MissingInputs()
+    {
+        var missing = new List<string>();
+        if (Company.Financials.ExpensesRub is null)
+        {
+            missing.Add("company.financials.expenses_rub");
+        }
+
+        if (Company.Financials.NetProfitRub is null)
+        {
+            missing.Add("company.financials.net_profit_rub");
+        }
+
+        if (Checks.Egrul is null)
+        {
+            missing.Add("checks.egrul");
+        }
+
+        if (Checks.Fns is null)
+        {
+            missing.Add("checks.fns");
+        }
+        else if (Checks.Fns.ReportedRevenueRub is null)
+        {
+            missing.Add("checks.fns.reported_revenue_rub");
+        }
+
+        if (Checks.CreditBureau is null)
+        {
+            missing.Add("checks.credit_bureau");
+        }
+
+        if (Checks.Fssp is null)
+        {
+            missing.Add("checks.fssp");
+        }
+
+        return missing;
+    }
+}
 
 public sealed record ScoringApplication(
     Guid Id,

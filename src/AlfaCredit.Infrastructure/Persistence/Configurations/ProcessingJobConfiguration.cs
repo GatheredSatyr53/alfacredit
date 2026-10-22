@@ -19,6 +19,7 @@ internal sealed class ProcessingJobConfiguration : IEntityTypeConfiguration<Proc
         builder.Property(j => j.Attempts).HasColumnName("attempts").IsRequired();
         builder.Property(j => j.MaxAttempts).HasColumnName("max_attempts").IsRequired();
         builder.Property(j => j.NextRunAt).HasColumnName("next_run_at").IsRequired();
+        builder.Property(j => j.LeaseExpiresAt).HasColumnName("lease_expires_at");
         builder.Property(j => j.LastError).HasColumnName("last_error").HasMaxLength(ProcessingJob.ErrorMaxLength);
         builder.Property(j => j.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(j => j.UpdatedAt).HasColumnName("updated_at").IsRequired();

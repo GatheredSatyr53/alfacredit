@@ -29,6 +29,7 @@
 |---|---|---|---|
 | mcr.microsoft.com/dotnet/sdk, /aspnet | 10.0.402, 10.0.13 | MIT (образ), Debian (базовая ОС) | Сборка и запуск API |
 | postgres (Docker Official Image) | 16.15-alpine | PostgreSQL License | База данных |
+| python (Docker Official Image) | 3.13.16-slim | PSF License (Python), Debian (базовая ОС) | Сервис скоринга: заглушка `scoring/` на стандартной библиотеке, без внешних пакетов |
 | GitHub Actions: actions/checkout, actions/setup-dotnet, actions/upload-artifact, docker/setup-buildx-action, docker/build-push-action | v4, v4, v4, v3, v6 | MIT / Apache-2.0 | CI |
 
 ## Модели и датасеты

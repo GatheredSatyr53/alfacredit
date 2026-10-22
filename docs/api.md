@@ -234,8 +234,35 @@
 | `Rejected` | Rejected | `offer` = null, `reasons` перечисляют стоп-факторы или причину по грейду |
 | `ManualReview` | ManualReview | `isFinal` = false, `recommendedType` показывает рекомендацию автоматики менеджеру |
 
-Сотрудник банка в том же методе дополнительно получает `scoring` (балл, грейд, вероятность дефолта, факторы с вкладом)
-и `checks` (результаты ЕГРЮЛ, ФНС, БКИ, ФССП с краткими выводами и флагами риска). Клиенту эти поля приходят как `null`.
+Сотрудник банка в том же методе дополнительно получает `scoring` и `checks` (результаты ЕГРЮЛ, ФНС, БКИ, ФССП
+с краткими выводами и флагами риска). Клиенту эти поля приходят как `null`.
+
+```json
+{
+  "scoring": {
+    "score": 95, "grade": "A", "probabilityOfDefault": 0.035,
+    "factors": [
+      { "code": "credit_history", "title": "Кредитная история", "impact": 15, "value": "без просрочек", "clientExplanation": "Просрочек по кредитам за два года нет." },
+      { "code": "revenue_to_amount", "title": "Выручка к сумме кредита", "impact": 15, "value": "32.0x", "clientExplanation": "Запрошенная сумма небольшая относительно годовой выручки." }
+    ],
+    "warnings": [],
+    "missingData": [],
+    "modelVersion": "stub-rules-1.0",
+    "source": "External",
+    "requestId": "01a1a7e9-5c0b-7d4e-9b2a-3f1c2d4e5f60",
+    "durationMs": 48,
+    "computedAt": "2026-10-22T08:15:31+00:00"
+  }
+}
+```
+
+| Поле | Что означает |
+|---|---|
+| `source` | `External`: посчитал сервис скоринга; `RulesFallback`: сервис был недоступен, посчитала встроенная модель; `Rules`: режим без внешнего сервиса |
+| `modelVersion` | версия модели из ответа сервиса (или `rules-v1`), сохраняется для воспроизводимости |
+| `warnings` | предупреждения модели: `net_profit_missing`, `credit_bureau_missing`, `external_scoring_unavailable` и т.п. |
+| `missingData` | каких входов не хватало, пути полей запроса к скорингу: `company.financials.net_profit_rub`, `checks.credit_bureau` |
+| `requestId`, `durationMs`, `computedAt` | идентификатор запроса к сервису (по нему расчёт ищется в логах сервиса), длительность и момент расчёта |
 
 ### POST /api/applications/{id}/offer/accept
 

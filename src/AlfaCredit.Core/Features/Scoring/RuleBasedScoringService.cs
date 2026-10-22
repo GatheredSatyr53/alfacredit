@@ -158,7 +158,7 @@ public sealed class RuleBasedScoringService : IScoringService
         var probabilityOfDefault = Math.Round(0.02m + (100 - score) / 100m * 0.30m, 3);
 
         var ordered = factors.OrderByDescending(f => Math.Abs(f.Impact)).ThenBy(f => f.Code).ToArray();
-        return new ScoringOutcome(score, grade, probabilityOfDefault, ordered, warnings, ModelVersion, ScoringSource.Rules);
+        return new ScoringOutcome(score, grade, probabilityOfDefault, ordered, warnings, request.MissingInputs(), ModelVersion, ScoringSource.Rules);
     }
 
     private static string FormatMonths(int months)

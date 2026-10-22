@@ -3,8 +3,10 @@ using System.Threading.RateLimiting;
 using AlfaCredit.Api.Realtime;
 using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Infrastructure.Persistence;
+using AlfaCredit.Infrastructure.Scoring;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace AlfaCredit.Api.Setup;
 
@@ -60,8 +62,15 @@ public static class ServiceCollectionExtensions
 
         services.AddApiSwagger();
 
-        services.AddHealthChecks()
+        var healthChecks = services.AddHealthChecks()
             .AddDbContextCheck<AppDbContext>("database", tags: [HealthChecksSetup.ReadyTag]);
+
+        // Внешний скоринг: недоступность не делает API неготовым, но видна в /health/ready
+        if (configuration.GetValue<ScoringMode?>($"{ScoringOptions.SectionName}:Mode") == ScoringMode.External)
+        {
+            services.AddHttpClient(ScoringServiceHealthCheck.ClientName, client => client.Timeout = TimeSpan.FromSeconds(3));
+            healthChecks.AddCheck<ScoringServiceHealthCheck>("scoring", failureStatus: HealthStatus.Degraded, tags: [HealthChecksSetup.ReadyTag]);
+        }
 
         return services;
     }

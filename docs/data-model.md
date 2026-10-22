@@ -95,6 +95,7 @@ erDiagram
         int attempts
         int max_attempts
         timestamptz next_run_at "задержка между этапами"
+        timestamptz lease_expires_at "аренда воркера, для восстановления после сбоя"
         varchar last_error
     }
     external_checks {
@@ -111,13 +112,16 @@ erDiagram
     scoring_results {
         uuid id PK
         uuid application_id FK
+        uuid request_id "request_id запроса к сервису скоринга"
         int score "0..100"
         varchar grade "A..E"
         numeric probability_of_default
         jsonb factors "вклад и объяснение"
-        varchar warnings
+        varchar warnings "коды через запятую"
+        varchar missing_data "пути отсутствовавших входов"
         varchar model_version
         varchar source "Rules | External | RulesFallback"
+        int duration_ms "длительность расчёта"
         timestamptz computed_at
     }
     decisions {
