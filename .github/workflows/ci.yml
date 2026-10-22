@@ -35,6 +35,9 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=results.trx" --results-directory TestResults
 
+      - name: Test scoring stub (Python, stdlib only)
+        run: python3 -m unittest discover -s scoring -p "test_*.py" -v
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -62,3 +65,13 @@ jobs:
           tags: alfacredit-api:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build scoring image
+        uses: docker/build-push-action@v6
+        with:
+          context: scoring
+          file: scoring/Dockerfile
+          push: false
+          tags: alfacredit-scoring:ci
+          cache-from: type=gha,scope=scoring
+          cache-to: type=gha,mode=max,scope=scoring

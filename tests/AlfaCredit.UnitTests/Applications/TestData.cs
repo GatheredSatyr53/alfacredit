@@ -11,7 +11,9 @@ internal static class TestData
         string inn = "7701234567",
         DateOnly? registeredAt = null,
         Guid? memberUserId = null,
-        decimal annualRevenue = 48_000_000)
+        decimal annualRevenue = 48_000_000,
+        decimal? netProfit = 7_200_000,
+        decimal monthlyDebtPayments = 150_000)
     {
         var company = Core.Domain.Companies.Company.Create(
             inn,
@@ -24,9 +26,9 @@ internal static class TestData
             "Иванова Мария Сергеевна",
             TaxRegime.Osno,
             annualRevenue,
-            40_800_000,
-            7_200_000,
-            150_000,
+            annualRevenue - (netProfit ?? 0),
+            netProfit,
+            monthlyDebtPayments,
             24,
             Now);
 
@@ -45,7 +47,10 @@ internal static class TestData
         int minTermMonths = 3,
         int maxTermMonths = 24,
         IEnumerable<LoanPurpose>? allowedPurposes = null,
-        int minBusinessAgeMonths = 12) =>
+        int minBusinessAgeMonths = 12,
+        decimal autoApprovalLimit = 5_000_000,
+        bool requiresCollateral = false,
+        decimal baseRate = 19.5m) =>
         CreditProduct.Create(
             code,
             "Оборотный кредит",
@@ -55,10 +60,10 @@ internal static class TestData
             maxAmount,
             minTermMonths,
             maxTermMonths,
-            19.5m,
+            baseRate,
             allowedPurposes ?? [LoanPurpose.WorkingCapital, LoanPurpose.Other],
             minBusinessAgeMonths,
-            requiresCollateral: false,
-            autoApprovalLimit: 5_000_000,
+            requiresCollateral,
+            autoApprovalLimit,
             sortOrder: 1);
 }

@@ -76,6 +76,31 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/api/applications?page=1&pageSize=20
 Authorization: Bearer {{token}}
 
+### Принять предложение банка (после того как статус стал Approved или ApprovedWithConditions)
+POST {{baseUrl}}/api/applications/{{applicationId}}/offer/accept
+Authorization: Bearer {{token}}
+
+### Отклонить предложение банка
+POST {{baseUrl}}/api/applications/{{applicationId}}/offer/decline
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "reason": "Нашли предложение с меньшей ставкой"
+}
+
+### Лента событий
+GET {{baseUrl}}/api/feed?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### Непрочитанные события
+GET {{baseUrl}}/api/feed/unread-count
+Authorization: Bearer {{token}}
+
+### Отметить всё прочитанным
+POST {{baseUrl}}/api/feed/read-all
+Authorization: Bearer {{token}}
+
 ### Отменить заявку
 POST {{baseUrl}}/api/applications/{{applicationId}}/cancel
 Content-Type: application/json

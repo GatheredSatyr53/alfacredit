@@ -12,4 +12,7 @@ internal sealed class InMemoryUserRepository(params IEnumerable<User> users) : I
 
     public Task<User?> FindByIdAsync(Guid id, CancellationToken cancellationToken) =>
         Task.FromResult(_users.FirstOrDefault(u => u.Id == id));
+
+    public Task<IReadOnlyList<User>> ListActiveByRoleAsync(UserRole role, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<User>>(_users.Where(u => u.Role == role && u.IsActive).ToArray());
 }

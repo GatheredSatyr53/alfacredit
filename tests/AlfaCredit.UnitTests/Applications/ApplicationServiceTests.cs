@@ -30,7 +30,7 @@ public sealed class ApplicationServiceTests
         application.Status.ShouldBe(ApplicationStatus.Submitted);
         application.CreatedByUserId.ShouldBe(Client.UserId);
         _applications.Items.ShouldContain(application);
-        _unitOfWork.SaveCalls.ShouldBe(1);
+        _unitOfWork.SaveCalls.ShouldBe(2);
     }
 
     [Fact]
@@ -117,16 +117,40 @@ public sealed class ApplicationServiceTests
         var cancelled = await service.CancelAsync(created.Id, Client, "Передумали", CancellationToken.None);
 
         cancelled.Status.ShouldBe(ApplicationStatus.Cancelled);
-        _unitOfWork.SaveCalls.ShouldBe(2);
+        _unitOfWork.SaveCalls.ShouldBe(3);
         await Should.ThrowAsync<ForbiddenException>(() => service.CancelAsync(created.Id, Manager, null, CancellationToken.None));
     }
 
-    private ApplicationService CreateService() => new(
-        _applications,
-        new InMemoryCompanyRepository(_company),
-        new InMemoryProductRepository(_product),
-        _unitOfWork,
-        new FixedTimeProvider(TestData.Now));
+    private readonly InMemoryJobRepository _jobs = new();
+    private readonly InMemoryFeedRepository _feed = new();
+
+    [Fact]
+    public async Task CreateAsync_enqueues_first_pipeline_job_and_feed_event()
+    {
+        var service = CreateService();
+
+        var application = await service.CreateAsync(Command(), Client, CancellationToken.None);
+
+        _jobs.Items.ShouldHaveSingleItem().ApplicationId.ShouldBe(application.Id);
+        _jobs.Items[0].Stage.ShouldBe(Core.Domain.Processing.ProcessingStage.Validate);
+        _feed.Items.ShouldHaveSingleItem().UserId.ShouldBe(Client.UserId);
+    }
+
+    private ApplicationService CreateService()
+    {
+        var clock = new FixedTimeProvider(TestData.Now);
+        return new ApplicationService(
+            _applications,
+            new InMemoryCompanyRepository(_company),
+            new InMemoryProductRepository(_product),
+            _jobs,
+            new Core.Features.Feed.FeedService(_feed, new InMemoryUsersByRole(), clock),
+            new RecordingNotifier(),
+            _unitOfWork,
+            clock,
+            Microsoft.Extensions.Options.Options.Create(new Core.Features.Processing.ProcessingOptions { StageDelaySeconds = 0 }),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<ApplicationService>.Instance);
+    }
 
     private CreateApplicationCommand Command() =>
         new(_company.Id, _product.Code, 1_500_000, 12, LoanPurpose.WorkingCapital, "Закупка товара");

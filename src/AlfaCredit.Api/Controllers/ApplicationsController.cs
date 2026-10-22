@@ -89,6 +89,47 @@ public sealed class ApplicationsController(ApplicationService applications) : Co
         return application.ToDto(actor);
     }
 
+    /// <summary>Принять предложение банка по одобренной заявке.</summary>
+    /// <remarks>Доступно в статусах Approved и ApprovedWithConditions, пока предложение действует. Переводит заявку к подписанию договора.</remarks>
+    /// <response code="200">Предложение принято, возвращается актуальное состояние заявки.</response>
+    /// <response code="403">Нет доступа к заявке.</response>
+    /// <response code="404">Заявка не найдена.</response>
+    /// <response code="409">Предложения нет, оно уже закрыто или срок истёк.</response>
+    [HttpPost("{id:guid}/offer/accept")]
+    [Authorize(Policy = Policies.ClientOnly)]
+    [ProducesResponseType<ApplicationDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ApplicationDto>> AcceptOffer(Guid id, CancellationToken cancellationToken)
+    {
+        var actor = User.ToActor();
+        var application = await applications.AcceptOfferAsync(id, actor, cancellationToken);
+        return application.ToDto(actor);
+    }
+
+    /// <summary>Отклонить предложение банка.</summary>
+    /// <remarks>Тело запроса необязательно. Заявка переходит в статус OfferDeclined.</remarks>
+    /// <response code="200">Предложение отклонено.</response>
+    /// <response code="403">Нет доступа к заявке.</response>
+    /// <response code="404">Заявка не найдена.</response>
+    /// <response code="409">Предложения нет, оно уже закрыто или срок истёк.</response>
+    [HttpPost("{id:guid}/offer/decline")]
+    [Authorize(Policy = Policies.ClientOnly)]
+    [ProducesResponseType<ApplicationDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ApplicationDto>> DeclineOffer(
+        Guid id,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] DeclineOfferRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var actor = User.ToActor();
+        var application = await applications.DeclineOfferAsync(id, actor, request?.Reason, cancellationToken);
+        return application.ToDto(actor);
+    }
+
     /// <summary>Отменить заявку.</summary>
     /// <remarks>Доступно клиенту, пока банк не принял решение. Тело запроса необязательно.</remarks>
     /// <response code="200">Заявка отменена, возвращается её актуальное состояние.</response>

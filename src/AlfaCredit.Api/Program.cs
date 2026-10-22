@@ -1,8 +1,8 @@
 using AlfaCredit.Api.Auth;
+using AlfaCredit.Api.Realtime;
 using AlfaCredit.Api.Setup;
 using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Core.Common;
-using AlfaCredit.Core.Features.Applications;
 using AlfaCredit.Core.Features.Auth;
 using AlfaCredit.Infrastructure;
 using AlfaCredit.Infrastructure.Persistence;
@@ -36,15 +36,11 @@ try
         }
     });
 
-    var connectionString = builder.Configuration.GetConnectionString("Default")
-        ?? throw new InvalidOperationException("Connection string 'Default' is not configured (env: ConnectionStrings__Default).");
-
     builder.Services.AddApiServices(builder.Configuration);
-    builder.Services.AddInfrastructure(connectionString);
+    builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddApiAuthentication(builder.Configuration);
 
     builder.Services.AddScoped<AuthService>();
-    builder.Services.AddScoped<ApplicationService>();
     builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 
     var app = builder.Build();
@@ -74,6 +70,7 @@ try
     app.UseAuthorization();
 
     app.MapControllers();
+    app.MapHub<ApplicationsHub>("/hubs/applications");
     app.MapApiHealthChecks();
 
     await app.Services.InitializeDatabaseAsync();

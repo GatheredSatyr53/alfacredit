@@ -12,6 +12,8 @@
 | Npgsql, Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3 | PostgreSQL License | Провайдер PostgreSQL |
 | Microsoft.AspNetCore.Authentication.JwtBearer, Microsoft.IdentityModel.* | 10.0.13 | MIT | Проверка и выпуск JWT |
 | Microsoft.Extensions.Identity.Core | 10.0.13 | MIT | Хеширование паролей (PBKDF2) |
+| Microsoft.Extensions.* (Options, Options.DataAnnotations, Configuration, Logging.Abstractions, Http, Hosting.Abstractions) | 10.0.13 | MIT | Конфигурация, опции, логирование, HttpClient, фоновые службы |
+| ASP.NET Core SignalR (в составе shared framework) | 10.0 | MIT | Обновления заявок в реальном времени |
 | Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore | 10.0.13 | MIT | Health check базы данных |
 | Serilog, Serilog.AspNetCore | 10.0.0 | Apache-2.0 | Структурное логирование |
 | Swashbuckle.AspNetCore | 10.3.1 | MIT | OpenAPI-документ и Swagger UI |
@@ -27,6 +29,7 @@
 |---|---|---|---|
 | mcr.microsoft.com/dotnet/sdk, /aspnet | 10.0.402, 10.0.13 | MIT (образ), Debian (базовая ОС) | Сборка и запуск API |
 | postgres (Docker Official Image) | 16.15-alpine | PostgreSQL License | База данных |
+| python (Docker Official Image) | 3.13.16-slim | PSF License (Python), Debian (базовая ОС) | Сервис скоринга: заглушка `scoring/` на стандартной библиотеке, без внешних пакетов |
 | GitHub Actions: actions/checkout, actions/setup-dotnet, actions/upload-artifact, docker/setup-buildx-action, docker/build-push-action | v4, v4, v4, v3, v6 | MIT / Apache-2.0 | CI |
 
 ## Модели и датасеты
@@ -48,4 +51,6 @@
 | Простая электронная подпись | Подписание договора кодом подтверждения, показанным в интерфейсе |
 | Выдача средств | Платёжное поручение и перевод на расчётный счёт без реальных операций |
 
-Симуляторы появляются на этапе 2 плана; список будет дополняться по мере реализации.
+Симуляторы ЕГРЮЛ, ФНС, БКИ и ФССП реализованы в `src/AlfaCredit.Infrastructure/Simulators`: детерминированные
+данные по ИНН, настраиваемая задержка и вероятность сбоя. Внешний сервис скоринга вызывается по контракту
+`docs/scoring-contract.md` только в режиме `Scoring__Mode=External`; по умолчанию работает встроенная балльная модель.

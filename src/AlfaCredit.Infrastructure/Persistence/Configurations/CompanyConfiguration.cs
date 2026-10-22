@@ -31,6 +31,8 @@ internal sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(c => c.EmployeesCount).HasColumnName("employees_count").IsRequired();
         builder.Property(c => c.CreatedAt).HasColumnName("created_at").IsRequired();
 
+        builder.Ignore(c => c.RegionCode);
+
         builder.HasMany(c => c.Members)
             .WithOne()
             .HasForeignKey(m => m.CompanyId)
