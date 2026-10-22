@@ -25,5 +25,11 @@ public sealed class ProcessingOptions
     [Range(5, 3600)]
     public int OfferExpiryCheckSeconds { get; set; } = 60;
 
+    /// <summary>Аренда задания воркером: если воркер погиб, не отметив задание, после этого срока его заберёт другой цикл.</summary>
+    [Range(10, 3600)]
+    public int LeaseSeconds { get; set; } = 120;
+
     public TimeSpan StageDelay => TimeSpan.FromSeconds(StageDelaySeconds);
+
+    public TimeSpan Lease => TimeSpan.FromSeconds(LeaseSeconds);
 }

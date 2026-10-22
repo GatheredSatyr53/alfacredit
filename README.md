@@ -9,7 +9,9 @@
 > обогащение сведениями из ЕГРЮЛ, ФНС, БКИ и ФССП (локальные симуляторы), скоринг, кредитная политика.
 > Результат: одобрение с предложением, одобрение с изменёнными условиями, отказ с объяснением причин
 > или передача менеджеру. Клиент принимает или отклоняет предложение, видит ленту событий,
-> получает обновления в реальном времени через SignalR.
+> получает обновления в реальном времени через SignalR. Скоринг считает отдельный сервис (контейнер `scoring`,
+> контракт в [docs/scoring-contract.md](docs/scoring-contract.md); сейчас это заглушка по контракту, её заменит
+> модель ML-команды), при его недоступности backend считает встроенной моделью и помечает результат `RulesFallback`.
 > Дальше по плану: действия менеджера, запросы уточнений, договор и выдача ([docs/backend-plan.md](docs/backend-plan.md)).
 
 ## Архитектура
@@ -19,7 +21,8 @@
 | Web API | `src/AlfaCredit.Api` | ASP.NET Core MVC: контроллеры, DTO, JWT, Swagger, SignalR-хаб, health checks, обработка ошибок |
 | Домен и сценарии | `src/AlfaCredit.Core` | Сущности, state machine заявки, конвейер обработки, балльный скоринг, кредитная политика, лента, порты. Без зависимостей от EF и ASP.NET |
 | Инфраструктура | `src/AlfaCredit.Infrastructure` | EF Core + PostgreSQL, миграции, репозитории, seed, симуляторы внешних источников, HTTP-клиент внешнего скоринга, фоновый воркер |
-| Тесты | `tests/AlfaCredit.UnitTests`, `tests/AlfaCredit.IntegrationTests` | xUnit; интеграционные тесты поднимают PostgreSQL через Testcontainers и прогоняют конвейер целиком |
+| Сервис скоринга | `scoring/` | Python-заглушка по [контракту](docs/scoring-contract.md): `GET /health`, `POST /api/v1/score`; отдельный контейнер, заменяется сервисом ML-команды без изменений в backend |
+| Тесты | `tests/AlfaCredit.UnitTests`, `tests/AlfaCredit.IntegrationTests` | xUnit; интеграционные тесты поднимают PostgreSQL через Testcontainers и прогоняют конвейер целиком, в том числе с заглушкой внешнего скоринга |
 
 Зависимости направлены внутрь: `Api → Core ← Infrastructure`.
 Стек: .NET 10 LTS, ASP.NET Core MVC, EF Core 10, PostgreSQL 16, SignalR, Serilog, Swashbuckle, xUnit, Docker.
@@ -28,6 +31,11 @@
 `FOR UPDATE SKIP LOCKED`, поэтому экземпляров API может быть несколько, а рестарт ничего не теряет.
 Этапы Validate, Enrich, Score, Decide выполняются по очереди с паузой `Processing__StageDelaySeconds`,
 чтобы движение заявки было видно в кабинете. Сбой этапа повторяется три раза, затем заявка уходит менеджеру.
+Взятое задание держит аренду, а при старте воркер возвращает в очередь задания, прерванные остановкой
+(`Requeued N job(s)` в логе): перезапуск посреди обработки ничего не теряет, заявка доходит до решения.
+На этапе Score backend отправляет сервису скоринга вложенный JSON (заявка с расчётным платежом, компания, проверки),
+сохраняет балл, грейд, факторы, предупреждения, пропуски в данных, версию модели и время расчёта, а на этапе Decide
+применяет кредитную политику: стоп-факторы, лимит автоодобрения, правила по грейдам A–E.
 
 Документация: [описание API с примерами](docs/api.md), [жизненный цикл заявки](docs/state-machine.md),
 [скоринг и кредитная политика](docs/decision-logic.md), [модель данных](docs/data-model.md),
@@ -54,7 +62,8 @@ docker compose up --build
 | OpenAPI-документ | http://localhost:8080/swagger/v1/swagger.json |
 | SignalR-хаб обновлений заявок | ws://localhost:8080/hubs/applications |
 | Liveness | http://localhost:8080/health/live |
-| Readiness (проверяет базу) | http://localhost:8080/health/ready |
+| Readiness (проверяет базу и сервис скоринга) | http://localhost:8080/health/ready |
+| Сервис скоринга | http://localhost:8000/health |
 
 Миграции и демо-данные применяются автоматически при старте API.
 Остановить и удалить данные: `docker compose down -v`.
@@ -62,11 +71,15 @@ docker compose up --build
 ## Запуск для разработки
 
 ```bash
-docker compose up -d db                      # только PostgreSQL
+docker compose up -d db scoring              # PostgreSQL и сервис скоринга
 dotnet restore
 dotnet run --project src/AlfaCredit.Api      # http://localhost:5080/swagger
 dotnet test                                  # unit + интеграционные (последние требуют Docker, иначе пропускаются)
+python3 -m unittest discover -s scoring -p "test_*.py"   # тесты заглушки скоринга
 ```
+
+При `dotnet run` по умолчанию работает встроенная модель (`Scoring:Mode` = `Rules` в `appsettings.json`).
+Чтобы ходить в сервис скоринга из compose: `Scoring__Mode=External Scoring__BaseUrl=http://localhost:8000 dotnet run --project src/AlfaCredit.Api`.
 
 Новая миграция после изменения модели:
 
@@ -97,8 +110,12 @@ Compose читает `.env` из корня (образец: `.env.example`). У
 | `PROCESSING_STAGE_DELAY_SECONDS` | `Processing__StageDelaySeconds` | `2` | Пауза между этапами конвейера, чтобы движение заявки было видно; 0 для максимальной скорости |
 | | `Processing__WorkerCount` | `2` | Параллельных циклов воркера |
 | `SIMULATORS_FAILURE_RATE` | `Simulators__FailureRate` | `0` | Вероятность сбоя внешнего источника (0..1): показывает повторы и передачу менеджеру |
-| `SCORING_MODE` | `Scoring__Mode` | `Rules` | `Rules`: встроенная балльная модель; `External`: сервис по [контракту](docs/scoring-contract.md) с откатом на правила |
-| `SCORING_BASE_URL` | `Scoring__BaseUrl` | `http://scoring:8000` | Адрес внешнего сервиса скоринга |
+| | `Processing__LeaseSeconds` | `120` | Аренда задания воркером; по её истечении зависшее задание заберёт другой цикл |
+| `SCORING_MODE` | `Scoring__Mode` | `External` (compose), `Rules` (`dotnet run`) | `External`: сервис по [контракту](docs/scoring-contract.md) с откатом на встроенную модель; `Rules`: только встроенная балльная модель |
+| `SCORING_BASE_URL` | `Scoring__BaseUrl` | `http://scoring:8000` | Адрес сервиса скоринга (имя сервиса в compose) |
+| `SCORING_TIMEOUT_SECONDS` | `Scoring__TimeoutSeconds` | `5` | Таймаут одного запроса к скорингу |
+| `SCORING_RETRIES` | `Scoring__Retries` | `2` | Повторы при 5xx, таймауте и обрыве связи (паузы `Scoring__RetryDelayMs` × номер попытки: 1 с, 2 с); 4xx не повторяется |
+| `SCORING_PORT` | | `8000` | Порт сервиса скоринга на хосте, только для отладки |
 | | `DecisionPolicy__*` | см. `appsettings.json` | Пороги кредитной политики: срок оффера, доля выручки, стоп-факторы |
 
 Секреты в репозитории не хранятся: в `appsettings.json` ключ JWT пустой, для `dotnet run` он берётся из
@@ -125,8 +142,10 @@ Seed повторяем: при каждом старте добавляются
 
 ## Сценарий проверки
 
-1. `docker compose up --build`, дождаться строк `Now listening on: http://[::]:8080` и `Processing worker started`.
-2. Открыть http://localhost:8080/health/ready: статус `Healthy`, проверка `database` в списке.
+1. `docker compose up --build`: поднимаются `db`, `scoring` и `api`; дождаться строк `Now listening on: http://[::]:8080`
+   и `Processing worker started`.
+2. Открыть http://localhost:8080/health/ready: статус `Healthy`, проверки `database` и `scoring` в списке;
+   http://localhost:8000/health отвечает `{"status":"ok","model_version":"stub-rules-1.0"}`.
 3. В Swagger выполнить `POST /api/auth/login` с телом `{"login": "client_good", "password": "Demo123!"}`,
    нажать Authorize и вставить `accessToken`.
 4. `GET /api/companies`: ООО «Ромашка», скопировать `id`.
@@ -146,11 +165,20 @@ Seed повторяем: при каждом старте добавляются
     четыре стоп-фактора с объяснениями.
 11. Войти как `client_manual` и подать `working-capital` на 8 000 000 ₽: статус «Рассмотрение менеджером»,
     `decision.recommendedType` = `Approved`.
-12. Войти как `manager`: `GET /api/applications/{id}` любой заявки показывает `scoring` с баллом, грейдом и факторами
-    и `checks` с результатами четырёх источников; `GET /api/feed` содержит событие о новой заявке в очереди.
-13. Перезапустить API (`docker compose restart api`) и повторить `GET /api/applications/{id}`: всё на месте,
+12. Войти как `manager`: `GET /api/applications/{id}` любой заявки показывает `scoring` с баллом, грейдом, факторами,
+    `source` = `External`, `modelVersion` = `stub-rules-1.0`, `missingData`, `requestId` и `durationMs`,
+    а также `checks` с результатами четырёх источников; `GET /api/feed` содержит событие о новой заявке в очереди.
+    В логе `scoring` виден запрос с тем же `request_id`.
+13. Недоступность скоринга: `docker compose stop scoring`, затем подать заявку от `client_good` (`express`, 300 000 ₽ на 6 мес).
+    Заявка не зависает: через несколько секунд (таймаут и два повтора) она одобрена, у менеджера в `scoring`
+    `source` = `RulesFallback` и предупреждение `external_scoring_unavailable`, в `/health/ready` проверка `scoring`
+    в статусе `Degraded`. `docker compose start scoring` возвращает внешний скоринг.
+14. Перезапуск посреди обработки: подать заявку и в течение пары секунд выполнить `docker compose restart api`.
+    После старта в логе `Requeued 1 job(s) interrupted by the previous shutdown`, заявка доходит до решения,
+    в `history` каждый статус встречается один раз.
+15. Перезапустить API (`docker compose restart api`) и повторить `GET /api/applications/{id}`: всё на месте,
     в логе `Seeding completed: users +0, products +0, companies +0`.
-14. Для демонстрации отказоустойчивости задать в `.env` `SIMULATORS_FAILURE_RATE=0.5` и перезапустить:
+16. Для демонстрации отказоустойчивости задать в `.env` `SIMULATORS_FAILURE_RATE=0.5` и перезапустить:
     в логе видны повторы запросов к источникам, а при трёх сбоях критичного источника заявка уходит менеджеру.
 
 Те же запросы в виде коллекции: [docs/requests.http](docs/requests.http) (VS Code REST Client, Rider)
@@ -178,17 +206,18 @@ Seed повторяем: при каждом старте добавляются
 | GET | `/api/feed`, `/api/feed/unread-count` | по токену | Лента событий и счётчик непрочитанных |
 | POST | `/api/feed/{id}/read`, `/api/feed/read-all` | по токену | Отметить прочитанным |
 | WS | `/hubs/applications` | по токену | SignalR: событие `applicationChanged` при каждой смене статуса |
-| GET | `/health/live`, `/health/ready` | все | Проверки живости и готовности |
+| GET | `/health/live`, `/health/ready` | все | Проверки живости и готовности (база, сервис скоринга) |
 
 ## Структура репозитория
 
 ```
 ├─ src/                 Api, Core, Infrastructure
+├─ scoring/             сервис скоринга: заглушка по контракту (Python, stdlib), Dockerfile, тесты
 ├─ tests/               UnitTests, IntegrationTests
 ├─ docs/                api.md, state-machine.md, decision-logic.md, data-model.md, scoring-contract.md, openapi.json, requests.http, postman_collection.json, backend-plan.md
 ├─ .github/workflows/   CI: restore в locked-mode, build, test, docker build
 ├─ Dockerfile           multi-stage сборка API, non-root runtime
-├─ docker-compose.yml   db + api
+├─ docker-compose.yml   db + scoring + api
 ├─ Directory.Build.props, Directory.Packages.props, global.json   фиксация настроек и версий
 └─ THIRD_PARTY_NOTICES.md
 ```

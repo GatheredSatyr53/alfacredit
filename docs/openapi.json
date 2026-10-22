@@ -1882,6 +1882,7 @@
         "properties": {
           "score": {
             "type": "integer",
+            "description": "Балл 0..100, чем выше, тем ниже риск.",
             "format": "int32"
           },
           "grade": {
@@ -1889,6 +1890,7 @@
           },
           "probabilityOfDefault": {
             "type": "number",
+            "description": "Вероятность дефолта 0..1, если модель её даёт.",
             "format": "double",
             "nullable": true
           },
@@ -1896,22 +1898,44 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ScoringFactorDto"
-            }
+            },
+            "description": "Главные факторы с вкладом в балл и объяснением."
           },
           "warnings": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Предупреждения модели, например net_profit_missing или external_scoring_unavailable."
+          },
+          "missingData": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Каких входных данных не хватало: пути полей запроса к скорингу, например checks.credit_bureau."
           },
           "modelVersion": {
-            "type": "string"
+            "type": "string",
+            "description": "Версия модели, которая посчитала результат."
           },
           "source": {
             "$ref": "#/components/schemas/ScoringSource"
           },
+          "requestId": {
+            "type": "string",
+            "description": "Идентификатор запроса к сервису скоринга.",
+            "format": "uuid",
+            "nullable": true
+          },
+          "durationMs": {
+            "type": "integer",
+            "description": "Длительность расчёта, мс.",
+            "format": "int32"
+          },
           "computedAt": {
             "type": "string",
+            "description": "Когда посчитано (UTC).",
             "format": "date-time"
           }
         },

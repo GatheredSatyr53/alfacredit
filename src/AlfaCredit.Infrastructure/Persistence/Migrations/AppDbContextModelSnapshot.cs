@@ -557,6 +557,10 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("last_error");
 
+                    b.Property<DateTimeOffset?>("LeaseExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lease_expires_at");
+
                     b.Property<int>("MaxAttempts")
                         .HasColumnType("integer")
                         .HasColumnName("max_attempts");
@@ -692,6 +696,10 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("computed_at");
 
+                    b.Property<int>("DurationMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_ms");
+
                     b.Property<string>("FactorsJson")
                         .IsRequired()
                         .HasColumnType("jsonb")
@@ -703,6 +711,12 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(2)")
                         .HasColumnName("grade");
 
+                    b.Property<string>("MissingData")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("missing_data");
+
                     b.Property<string>("ModelVersion")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -713,6 +727,10 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
                         .HasPrecision(6, 4)
                         .HasColumnType("numeric(6,4)")
                         .HasColumnName("probability_of_default");
+
+                    b.Property<Guid?>("RequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("request_id");
 
                     b.Property<int>("Score")
                         .HasColumnType("integer")
@@ -726,8 +744,8 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Warnings")
                         .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
                         .HasColumnName("warnings");
 
                     b.HasKey("Id");

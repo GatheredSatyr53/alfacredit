@@ -52,14 +52,28 @@ public sealed record OfferDto(
     DateTimeOffset? RespondedAt);
 
 /// <summary>Результат скоринга. Виден только сотрудникам банка.</summary>
+/// <param name="Score">Балл 0..100, чем выше, тем ниже риск.</param>
+/// <param name="Grade">Грейд риска A..E.</param>
+/// <param name="ProbabilityOfDefault">Вероятность дефолта 0..1, если модель её даёт.</param>
+/// <param name="Factors">Главные факторы с вкладом в балл и объяснением.</param>
+/// <param name="Warnings">Предупреждения модели, например net_profit_missing или external_scoring_unavailable.</param>
+/// <param name="MissingData">Каких входных данных не хватало: пути полей запроса к скорингу, например checks.credit_bureau.</param>
+/// <param name="ModelVersion">Версия модели, которая посчитала результат.</param>
+/// <param name="Source">Rules: встроенная модель; External: сервис скоринга; RulesFallback: сервис был недоступен, посчитала встроенная модель.</param>
+/// <param name="RequestId">Идентификатор запроса к сервису скоринга.</param>
+/// <param name="DurationMs">Длительность расчёта, мс.</param>
+/// <param name="ComputedAt">Когда посчитано (UTC).</param>
 public sealed record ScoringDto(
     int Score,
     RiskGrade Grade,
     decimal? ProbabilityOfDefault,
     IReadOnlyList<ScoringFactorDto> Factors,
     IReadOnlyList<string> Warnings,
+    IReadOnlyList<string> MissingData,
     string ModelVersion,
     ScoringSource Source,
+    Guid? RequestId,
+    int DurationMs,
     DateTimeOffset ComputedAt);
 
 /// <summary>Фактор скоринга.</summary>

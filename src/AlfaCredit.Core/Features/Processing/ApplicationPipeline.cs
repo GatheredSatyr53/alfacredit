@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Core.Common;
 using AlfaCredit.Core.Domain.Applications;
@@ -18,7 +19,8 @@ namespace AlfaCredit.Core.Features.Processing;
 
 /// <summary>
 /// Автоматический конвейер банка: проверка данных, обогащение внешними сведениями, скоринг, решение.
-/// Каждый этап выполняется отдельным заданием, между этапами настраиваемая пауза для наглядности демо.
+/// Каждый этап выполняется отдельным заданием из базы, между этапами настраиваемая пауза для наглядности демо.
+/// Этапы идемпотентны по статусу заявки: после перезапуска сервиса задание выполняется заново без дублей.
 /// </summary>
 public sealed class ApplicationPipeline(
     ICreditApplicationRepository applications,
@@ -267,24 +269,28 @@ public sealed class ApplicationPipeline(
 
         var history = await applications.GetCompanyHistoryAsync(application.CompanyId, application.Id, cancellationToken);
         var request = BuildScoringRequest(application, history, clock.GetUtcNow());
-        var outcome = await scoring.ScoreAsync(request, cancellationToken);
 
-        application.RecordScoring(ScoringResult.Create(
-            application.Id,
-            outcome.Score,
-            outcome.Grade,
-            outcome.ProbabilityOfDefault,
-            outcome.Factors,
-            outcome.Warnings,
-            outcome.ModelVersion,
-            outcome.Source,
-            clock.GetUtcNow()));
+        var stopwatch = Stopwatch.StartNew();
+        var outcome = await scoring.ScoreAsync(request, cancellationToken);
+        stopwatch.Stop();
+
+        // Чего не хватало, backend знает по отправленному запросу; сервис скоринга может дополнить список
+        var missing = request.MissingInputs().Union(outcome.MissingData, StringComparer.Ordinal).ToArray();
+        var result = ScoringResult.Create(application.Id, request.RequestId, outcome with { MissingData = missing }, (int)stopwatch.ElapsedMilliseconds, clock.GetUtcNow());
+        application.RecordScoring(result);
+        logger.LogInformation(
+            "Application {Number}: scoring {Source} ({Model}) gave {Score} points, grade {Grade}, {Elapsed} ms, request {RequestId}",
+            application.Number, result.Source, result.ModelVersion, result.Score, result.Grade, result.DurationMs, request.RequestId);
 
         return ProcessingStage.Decide;
     }
 
+    /// <summary>Собирает запрос по docs/scoring-contract.md: деньги в целых рублях, пропуски явным null, платёж по базовой ставке продукта.</summary>
     public static ScoringRequest BuildScoringRequest(CreditApplication application, CompanyApplicationHistory history, DateTimeOffset now)
     {
+        ArgumentNullException.ThrowIfNull(application);
+        ArgumentNullException.ThrowIfNull(history);
+
         var company = application.Company;
         var product = application.Product;
         var today = DateOnly.FromDateTime(now.UtcDateTime);
@@ -295,11 +301,11 @@ public sealed class ApplicationPipeline(
                 application.Id,
                 application.Number,
                 application.CreatedAt,
-                application.Amount,
+                Money.WholeRubles(application.Amount),
                 application.TermMonths,
                 application.Purpose,
-                LoanMath.MonthlyPayment(application.Amount, product.BaseRate, application.TermMonths),
-                new ScoringProduct(product.Code, product.Type, product.BaseRate, product.RequiresCollateral, product.AutoApprovalLimit),
+                Money.WholeRubles(LoanMath.MonthlyPayment(application.Amount, product.BaseRate, application.TermMonths)),
+                new ScoringProduct(product.Code, product.Type, product.BaseRate, product.RequiresCollateral, Money.WholeRubles(product.AutoApprovalLimit)),
                 CollateralOffered: false),
             new ScoringCompany(
                 company.Inn,
@@ -310,26 +316,39 @@ public sealed class ApplicationPipeline(
                 company.GetBusinessAgeMonths(today),
                 company.TaxRegime,
                 company.EmployeesCount,
-                new ScoringFinancials(12, company.AnnualRevenue, company.AnnualExpenses, company.NetProfit, company.MonthlyDebtPayments),
+                new ScoringFinancials(
+                    12,
+                    Money.WholeRubles(company.AnnualRevenue),
+                    Money.WholeRubles(company.AnnualExpenses),
+                    Money.WholeRubles(company.NetProfit),
+                    Money.WholeRubles(company.MonthlyDebtPayments)),
                 new ScoringHistory(history.PreviousApplications, history.PreviousRejections, history.PreviousLoansDisbursed)),
             ScoringChecks.From(application.ChecksSnapshot));
     }
 
     private async Task<ProcessingStage?> DecideAsync(CreditApplication application, CancellationToken cancellationToken)
     {
-        if (application.Status != ApplicationStatus.Scoring)
+        if (application.Status is not (ApplicationStatus.Scoring or ApplicationStatus.Deciding))
         {
             return null;
         }
 
-        application.BeginDeciding(clock.GetUtcNow());
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-        await NotifySafeAsync(application, cancellationToken);
-
-        // Пауза, чтобы статус «Принятие решения» был виден в кабинете
-        if (processingOptions.Value.StageDelay > TimeSpan.Zero)
+        if (application.Status == ApplicationStatus.Scoring)
         {
-            await Task.Delay(processingOptions.Value.StageDelay, cancellationToken);
+            application.BeginDeciding(clock.GetUtcNow());
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await NotifySafeAsync(application, cancellationToken);
+
+            // Пауза, чтобы статус «Принятие решения» был виден в кабинете
+            if (processingOptions.Value.StageDelay > TimeSpan.Zero)
+            {
+                await Task.Delay(processingOptions.Value.StageDelay, cancellationToken);
+            }
+        }
+        else
+        {
+            // Статус уже сохранён, а решения нет: сервис был остановлен посреди этапа, продолжаем с места остановки
+            logger.LogInformation("Application {Number}: decide stage resumed after interruption", application.Number);
         }
 
         var scoringResult = application.LatestScoring

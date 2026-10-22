@@ -5,6 +5,7 @@ public sealed class ProcessingJob
 {
     public const int DefaultMaxAttempts = 3;
     public const int ErrorMaxLength = 2000;
+    public const string InterruptedError = "Выполнение прервано перезапуском сервиса, задание возвращено в очередь.";
 
     private ProcessingJob()
     {
@@ -24,6 +25,9 @@ public sealed class ProcessingJob
 
     /// <summary>Не раньше этого момента воркер возьмёт задание: так реализована задержка между этапами.</summary>
     public DateTimeOffset NextRunAt { get; private set; }
+
+    /// <summary>Пока аренда не истекла, задание считается выполняющимся. Истёкшая аренда означает, что воркер погиб, и задание можно забрать снова.</summary>
+    public DateTimeOffset? LeaseExpiresAt { get; private set; }
 
     public string? LastError { get; private set; }
 
@@ -47,17 +51,22 @@ public sealed class ProcessingJob
             UpdatedAt = now,
         };
 
-    public void MarkRunning(DateTimeOffset now)
+    public void MarkRunning(DateTimeOffset now, TimeSpan lease)
     {
         Status = ProcessingJobStatus.Running;
         Attempts++;
+        LeaseExpiresAt = now + (lease < TimeSpan.Zero ? TimeSpan.Zero : lease);
         UpdatedAt = now;
     }
+
+    public bool IsLeaseExpired(DateTimeOffset now) =>
+        Status == ProcessingJobStatus.Running && LeaseExpiresAt is { } lease && lease <= now;
 
     public void MarkDone(DateTimeOffset now)
     {
         Status = ProcessingJobStatus.Done;
         LastError = null;
+        LeaseExpiresAt = null;
         UpdatedAt = now;
     }
 
@@ -65,6 +74,7 @@ public sealed class ProcessingJob
     public bool MarkFailed(string error, DateTimeOffset now, TimeSpan retryDelay)
     {
         LastError = error.Length > ErrorMaxLength ? error[..ErrorMaxLength] : error;
+        LeaseExpiresAt = null;
         UpdatedAt = now;
 
         if (CanRetry)
@@ -76,5 +86,16 @@ public sealed class ProcessingJob
 
         Status = ProcessingJobStatus.Failed;
         return false;
+    }
+
+    /// <summary>Возвращает прерванное задание в очередь, не засчитывая прерывание как неудачную попытку: обработка продолжается после перезапуска.</summary>
+    public void Requeue(DateTimeOffset now)
+    {
+        Status = ProcessingJobStatus.Pending;
+        Attempts = Math.Max(0, Attempts - 1);
+        NextRunAt = now;
+        LeaseExpiresAt = null;
+        LastError = InterruptedError;
+        UpdatedAt = now;
     }
 }

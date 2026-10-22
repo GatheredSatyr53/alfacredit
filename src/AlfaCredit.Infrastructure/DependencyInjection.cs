@@ -64,8 +64,7 @@ public static class DependencyInjection
             services.AddHttpClient<HttpScoringService>((provider, client) =>
             {
                 var scoring = provider.GetRequiredService<IOptions<ScoringOptions>>().Value;
-                var baseUrl = string.IsNullOrWhiteSpace(scoring.BaseUrl) ? "http://scoring:8000" : scoring.BaseUrl;
-                client.BaseAddress = new Uri(baseUrl.EndsWith('/') ? baseUrl : baseUrl + "/");
+                client.BaseAddress = scoring.ResolveBaseAddress();
                 client.Timeout = TimeSpan.FromSeconds(scoring.TimeoutSeconds);
             });
             services.AddScoped<IScoringService>(provider => provider.GetRequiredService<HttpScoringService>());

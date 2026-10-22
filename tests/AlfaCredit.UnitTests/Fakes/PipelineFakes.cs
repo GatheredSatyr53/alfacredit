@@ -4,7 +4,9 @@ using AlfaCredit.Core.Domain.Checks;
 using AlfaCredit.Core.Domain.Companies;
 using AlfaCredit.Core.Domain.Feed;
 using AlfaCredit.Core.Domain.Processing;
+using AlfaCredit.Core.Domain.Scoring;
 using AlfaCredit.Core.Domain.Users;
+using AlfaCredit.Core.Features.Scoring;
 
 namespace AlfaCredit.UnitTests.Fakes;
 
@@ -14,11 +16,21 @@ internal sealed class InMemoryJobRepository : IProcessingJobRepository
 
     public void Add(ProcessingJob job) => Items.Add(job);
 
-    public Task<ProcessingJob?> ClaimNextAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    public Task<ProcessingJob?> ClaimNextAsync(DateTimeOffset now, TimeSpan lease, CancellationToken cancellationToken)
     {
-        var job = Items.Where(j => j.Status == ProcessingJobStatus.Pending && j.NextRunAt <= now).OrderBy(j => j.NextRunAt).FirstOrDefault();
-        job?.MarkRunning(now);
+        var job = Items
+            .Where(j => (j.Status == ProcessingJobStatus.Pending && j.NextRunAt <= now) || j.IsLeaseExpired(now))
+            .OrderBy(j => j.NextRunAt)
+            .FirstOrDefault();
+        job?.MarkRunning(now, lease);
         return Task.FromResult(job);
+    }
+
+    public Task<int> RequeueInterruptedAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var running = Items.Where(j => j.Status == ProcessingJobStatus.Running).ToList();
+        running.ForEach(j => j.Requeue(now));
+        return Task.FromResult(running.Count);
     }
 
     public Task<ProcessingJob?> FindByIdAsync(Guid id, CancellationToken cancellationToken) =>
@@ -55,6 +67,21 @@ internal sealed class RecordingNotifier : IApplicationNotifier
     {
         Notifications.Add(notification);
         return Task.CompletedTask;
+    }
+}
+
+/// <summary>Внешний скоринг для тестов: отдаёт заданный результат и запоминает запрос.</summary>
+internal sealed class FakeScoringService(ScoringOutcome outcome) : IScoringService
+{
+    public ScoringRequest? LastRequest { get; private set; }
+
+    public int Calls { get; private set; }
+
+    public Task<ScoringOutcome> ScoreAsync(ScoringRequest request, CancellationToken cancellationToken)
+    {
+        Calls++;
+        LastRequest = request;
+        return Task.FromResult(outcome);
     }
 }
 

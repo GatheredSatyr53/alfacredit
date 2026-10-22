@@ -21,6 +21,25 @@ services:
       retries: 12
     restart: unless-stopped
 
+  # Сервис скоринга (Python) по docs/scoring-contract.md. Сейчас заглушка из ./scoring, заменяется сервисом ML-команды.
+  scoring:
+    build:
+      context: ./scoring
+      dockerfile: Dockerfile
+    image: alfacredit-scoring:local
+    environment:
+      PORT: "8000"
+    ports:
+      # Только для локальной отладки (curl localhost:8000/health); API ходит по внутреннему адресу http://scoring:8000
+      - "127.0.0.1:${SCORING_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).status == 200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+    restart: unless-stopped
+
   api:
     build:
       context: .
@@ -29,6 +48,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      # API стартует, даже если скоринг ещё поднимается или упал: заявки считает встроенная модель (RulesFallback)
+      scoring:
+        condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080
@@ -44,8 +66,10 @@ services:
       Swagger__Enabled: "true"
       Processing__StageDelaySeconds: ${PROCESSING_STAGE_DELAY_SECONDS:-2}
       Simulators__FailureRate: ${SIMULATORS_FAILURE_RATE:-0}
-      Scoring__Mode: ${SCORING_MODE:-Rules}
+      Scoring__Mode: ${SCORING_MODE:-External}
       Scoring__BaseUrl: ${SCORING_BASE_URL:-http://scoring:8000}
+      Scoring__TimeoutSeconds: ${SCORING_TIMEOUT_SECONDS:-5}
+      Scoring__Retries: ${SCORING_RETRIES:-2}
     ports:
       - "${API_PORT:-8080}:8080"
     healthcheck:
