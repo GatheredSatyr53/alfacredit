@@ -10,6 +10,10 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string DemoPassword = "Demo123!";
 
+    // Program.cs создаёт bootstrap-логгер Serilog в статическом Log.Logger и замораживает его при сборке хоста:
+    // сборка двух хостов одновременно в одном процессе падает с «The logger is already frozen», поэтому сборка сериализована.
+    private static readonly object HostBuildLock = new();
+
     private readonly PostgreSqlContainer? _database = DockerAvailability.IsAvailable
         ? new PostgreSqlBuilder("postgres:16.15-alpine").Build()
         : null;
@@ -42,6 +46,14 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     /// <summary>Настройки, которыми отдельный стенд дополняет или переопределяет базовые.</summary>
     protected virtual void ConfigureTestSettings(IWebHostBuilder builder)
     {
+    }
+
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        lock (HostBuildLock)
+        {
+            return base.CreateHost(builder);
+        }
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
