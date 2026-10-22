@@ -11,4 +11,7 @@ internal sealed class UserRepository(AppDbContext db) : IUserRepository
 
     public Task<User?> FindByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+
+    public async Task<IReadOnlyList<User>> ListActiveByRoleAsync(UserRole role, CancellationToken cancellationToken) =>
+        await db.Users.AsNoTracking().Where(u => u.Role == role && u.IsActive).OrderBy(u => u.Login).ToListAsync(cancellationToken);
 }

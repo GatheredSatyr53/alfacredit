@@ -12,6 +12,13 @@ erDiagram
     credit_products ||--o{ credit_applications : "выбран"
     users ||--o{ credit_applications : "создал"
     credit_applications ||--o{ application_status_history : "история"
+    credit_applications ||--o{ processing_jobs : "задания конвейера"
+    credit_applications ||--o{ external_checks : "проверки"
+    credit_applications ||--o{ scoring_results : "скоринг"
+    credit_applications ||--o{ decisions : "решения"
+    decisions ||--o{ offers : "предложение"
+    credit_applications ||--o{ feed_items : "события"
+    users ||--o{ feed_items : "лента"
 
     users {
         uuid id PK
@@ -80,6 +87,83 @@ erDiagram
         timestamptz updated_at
         xid xmin "оптимистическая блокировка"
     }
+    processing_jobs {
+        uuid id PK
+        uuid application_id FK
+        varchar stage "Validate | Enrich | Score | Decide"
+        varchar status "Pending | Running | Done | Failed"
+        int attempts
+        int max_attempts
+        timestamptz next_run_at "задержка между этапами"
+        timestamptz lease_expires_at "аренда воркера, для восстановления после сбоя"
+        varchar last_error
+    }
+    external_checks {
+        uuid id PK
+        uuid application_id FK
+        varchar source "Egrul | Fns | CreditBureau | Fssp"
+        varchar status "Succeeded | Failed"
+        jsonb payload "сырой ответ источника"
+        varchar summary
+        varchar risk_flags
+        int attempts
+        timestamptz checked_at
+    }
+    scoring_results {
+        uuid id PK
+        uuid application_id FK
+        uuid request_id "request_id запроса к сервису скоринга"
+        int score "0..100"
+        varchar grade "A..E"
+        numeric probability_of_default
+        jsonb factors "вклад и объяснение"
+        varchar warnings "коды через запятую"
+        varchar missing_data "пути отсутствовавших входов"
+        varchar model_version
+        varchar source "Rules | External | RulesFallback"
+        int duration_ms "длительность расчёта"
+        timestamptz computed_at
+    }
+    decisions {
+        uuid id PK
+        uuid application_id FK
+        varchar type "Approved | ApprovedWithConditions | Rejected | ManualReview"
+        varchar decided_by "Auto | Manager"
+        uuid decided_by_user_id
+        varchar recommended_type
+        numeric approved_amount
+        int approved_term_months
+        numeric interest_rate
+        numeric monthly_payment
+        varchar conditions
+        jsonb reasons
+        bool is_final
+        timestamptz decided_at
+    }
+    offers {
+        uuid id PK
+        uuid application_id FK
+        uuid decision_id FK
+        numeric amount
+        int term_months
+        numeric interest_rate
+        numeric monthly_payment
+        timestamptz expires_at
+        varchar response "Pending | Accepted | Declined | Expired"
+        timestamptz responded_at
+    }
+    feed_items {
+        uuid id PK
+        uuid user_id FK
+        uuid application_id FK
+        varchar type
+        varchar title
+        varchar body
+        varchar link
+        bool is_read
+        timestamptz created_at
+        timestamptz read_at
+    }
     application_status_history {
         uuid id PK
         uuid application_id FK
@@ -102,5 +186,8 @@ erDiagram
 - **Цели продукта** хранятся строкой `WorkingCapital,Other`: справочник маленький и стабильный, отдельная таблица не нужна.
 - **Индексы**: `credit_applications (company_id, created_at)` для кабинета клиента, `credit_applications (status)` для очереди банка,
   `application_status_history (application_id, occurred_at)` для таймлайна.
-- Следующие этапы добавят таблицы документов, запросов на уточнение, внешних проверок, скоринга, решений, договоров,
-  выдач, ленты событий и очереди заданий конвейера; см. `backend-plan.md`.
+- **Очередь конвейера** в базе, а не в памяти: задания переживают рестарт, несколько воркеров берут их через
+  `FOR UPDATE SKIP LOCKED` без дублей, поле `next_run_at` задаёт паузу между этапами.
+- **Сырые ответы источников** хранятся в `jsonb` для аудита; типизированный снимок собирается из последних успешных проверок.
+- **Решения** накапливаются: автоматическое с типом `ManualReview` хранит рекомендацию, менеджер позже добавит окончательное.
+- Следующие этапы добавят таблицы документов, запросов на уточнение, договоров и выдач; см. `backend-plan.md`.

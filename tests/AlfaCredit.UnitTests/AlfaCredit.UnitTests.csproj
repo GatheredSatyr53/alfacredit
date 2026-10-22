@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/AlfaCredit.Core/AlfaCredit.Core.csproj" />
+    <ProjectReference Include="../../src/AlfaCredit.Infrastructure/AlfaCredit.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

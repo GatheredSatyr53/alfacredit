@@ -1,6 +1,9 @@
 using AlfaCredit.Core.Common;
+using AlfaCredit.Core.Domain.Checks;
 using AlfaCredit.Core.Domain.Companies;
+using AlfaCredit.Core.Domain.Decisions;
 using AlfaCredit.Core.Domain.Products;
+using AlfaCredit.Core.Domain.Scoring;
 
 namespace AlfaCredit.Core.Domain.Applications;
 
@@ -11,6 +14,10 @@ public sealed class CreditApplication
     public const int PurposeDescriptionMaxLength = 1000;
 
     private readonly List<ApplicationStatusHistory> _history = [];
+    private readonly List<ExternalCheck> _checks = [];
+    private readonly List<ScoringResult> _scoringResults = [];
+    private readonly List<Decision> _decisions = [];
+    private readonly List<Offer> _offers = [];
 
     private CreditApplication()
     {
@@ -49,6 +56,26 @@ public sealed class CreditApplication
     public uint Version { get; private set; }
 
     public IReadOnlyList<ApplicationStatusHistory> History => _history.AsReadOnly();
+
+    public IReadOnlyList<ExternalCheck> Checks => _checks.AsReadOnly();
+
+    public IReadOnlyList<ScoringResult> ScoringResults => _scoringResults.AsReadOnly();
+
+    public IReadOnlyList<Decision> Decisions => _decisions.AsReadOnly();
+
+    public IReadOnlyList<Offer> Offers => _offers.AsReadOnly();
+
+    public ScoringResult? LatestScoring => _scoringResults.MaxBy(s => s.ComputedAt);
+
+    public Decision? LatestDecision => _decisions.MaxBy(d => d.DecidedAt);
+
+    public Decision? FinalDecision => _decisions.Where(d => d.IsFinal).MaxBy(d => d.DecidedAt);
+
+    public Offer? CurrentOffer => _offers.MaxBy(o => o.CreatedAt);
+
+    public ChecksSnapshot ChecksSnapshot => ExternalCheck.ToSnapshot(_checks);
+
+    public bool IsTerminal => ApplicationStatusCatalog.Get(Status).IsTerminal;
 
     /// <summary>Создаёт заявку и сразу отправляет её в банк. Все ошибки по полям возвращаются вместе.</summary>
     public static CreditApplication Create(
@@ -155,6 +182,138 @@ public sealed class CreditApplication
             .Select(name => name!)
             .Distinct()
             .ToArray();
+
+    // ---- Конвейер банка ----
+
+    public void BeginValidation(DateTimeOffset now) =>
+        ChangeStatus(ApplicationStatus.Validating, ActorType.System, null, "Автоматическая проверка полноты и корректности данных.", now);
+
+    public void RequestClarification(string comment, ActorType actor, Guid? actorUserId, DateTimeOffset now) =>
+        ChangeStatus(ApplicationStatus.NeedsClarification, actor, actorUserId, comment, now);
+
+    public void BeginEnrichment(DateTimeOffset now) =>
+        ChangeStatus(ApplicationStatus.Enriching, ActorType.System, null, "Запрос сведений из ЕГРЮЛ, ФНС, бюро кредитных историй и ФССП.", now);
+
+    public void RecordCheck(ExternalCheck check)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        _checks.Add(check);
+    }
+
+    public void BeginScoring(DateTimeOffset now) =>
+        ChangeStatus(ApplicationStatus.Scoring, ActorType.System, null, "Расчёт скоринговой оценки.", now);
+
+    public void RecordScoring(ScoringResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        _scoringResults.Add(result);
+    }
+
+    public void BeginDeciding(DateTimeOffset now) =>
+        ChangeStatus(ApplicationStatus.Deciding, ActorType.System, null, "Применение кредитной политики банка.", now);
+
+    public void RouteToManualReview(string reason, DateTimeOffset now) =>
+        ChangeStatus(ApplicationStatus.ManualReview, ActorType.System, null, reason, now);
+
+    /// <summary>Фиксирует решение, переводит статус и для одобрения создаёт предложение клиенту.</summary>
+    public Offer? ApplyDecision(Decision decision, TimeSpan offerValidity, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(decision);
+        var actor = decision.DecidedBy == DecisionActor.Manager ? ActorType.Manager : ActorType.System;
+        var who = decision.DecidedBy == DecisionActor.Manager ? "Решение менеджера" : "Автоматическое решение";
+
+        _decisions.Add(decision);
+
+        switch (decision.Type)
+        {
+            case DecisionType.Approved:
+            case DecisionType.ApprovedWithConditions:
+                var status = decision.Type == DecisionType.Approved ? ApplicationStatus.Approved : ApplicationStatus.ApprovedWithConditions;
+                var suffix = decision.Type == DecisionType.Approved ? "одобрено на запрошенных условиях." : "одобрено с изменением условий.";
+                ChangeStatus(status, actor, decision.DecidedByUserId, $"{who}: {suffix}", now);
+                var offer = Offer.Create(
+                    Id,
+                    decision.Id,
+                    decision.ApprovedAmount ?? Amount,
+                    decision.ApprovedTermMonths ?? TermMonths,
+                    decision.InterestRate ?? Product.BaseRate,
+                    decision.MonthlyPayment ?? LoanMath.MonthlyPayment(decision.ApprovedAmount ?? Amount, decision.InterestRate ?? Product.BaseRate, decision.ApprovedTermMonths ?? TermMonths),
+                    now,
+                    offerValidity);
+                _offers.Add(offer);
+                return offer;
+
+            case DecisionType.Rejected:
+                ChangeStatus(ApplicationStatus.Rejected, actor, decision.DecidedByUserId, $"{who}: отказ.", now);
+                return null;
+
+            case DecisionType.ManualReview:
+                var reasons = string.Join(" ", decision.Reasons.Select(r => r.Title + "."));
+                ChangeStatus(ApplicationStatus.ManualReview, ActorType.System, null, $"Передана менеджеру. {reasons}".Trim(), now);
+                return null;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(decision), decision.Type, "Неизвестный тип решения.");
+        }
+    }
+
+    // ---- Действия клиента по предложению ----
+
+    public Offer AcceptOffer(Guid userId, DateTimeOffset now)
+    {
+        var offer = RequirePendingOffer(now);
+        ChangeStatus(ApplicationStatus.ContractSigning, ActorType.Client, userId, "Клиент принял предложение банка.", now);
+        offer.Accept(now);
+        return offer;
+    }
+
+    public Offer DeclineOffer(Guid userId, string? reason, DateTimeOffset now)
+    {
+        var offer = RequirePendingOffer(now);
+        ChangeStatus(ApplicationStatus.OfferDeclined, ActorType.Client, userId, string.IsNullOrWhiteSpace(reason) ? "Клиент отказался от предложения." : reason, now);
+        offer.Decline(now);
+        return offer;
+    }
+
+    /// <summary>Переводит заявку в «предложение отклонено», если срок предложения истёк. Возвращает true при изменении.</summary>
+    public bool ExpireOfferIfNeeded(DateTimeOffset now)
+    {
+        if (Status is not (ApplicationStatus.Approved or ApplicationStatus.ApprovedWithConditions))
+        {
+            return false;
+        }
+
+        var offer = CurrentOffer;
+        if (offer is null || !offer.IsExpired(now))
+        {
+            return false;
+        }
+
+        offer.Expire(now);
+        ChangeStatus(ApplicationStatus.OfferDeclined, ActorType.System, null, "Срок действия предложения истёк.", now);
+        return true;
+    }
+
+    private Offer RequirePendingOffer(DateTimeOffset now)
+    {
+        if (Status is not (ApplicationStatus.Approved or ApplicationStatus.ApprovedWithConditions))
+        {
+            throw new ConflictException($"Предложение можно принять или отклонить только по одобренной заявке. Текущий статус: «{ApplicationStatusCatalog.Get(Status).Title}».");
+        }
+
+        var offer = CurrentOffer ?? throw new ConflictException("По заявке нет действующего предложения.");
+        if (!offer.IsPending)
+        {
+            throw new ConflictException("Ответ на предложение уже дан.");
+        }
+
+        if (offer.IsExpired(now))
+        {
+            throw new ConflictException("Срок действия предложения истёк.");
+        }
+
+        return offer;
+    }
 
     private static string? ActionName(ApplicationStatus target) => target switch
     {

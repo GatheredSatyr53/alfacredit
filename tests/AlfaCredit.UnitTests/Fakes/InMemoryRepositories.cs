@@ -46,6 +46,20 @@ internal sealed class InMemoryApplicationRepository : ICreditApplicationReposito
     public Task<CreditApplication?> FindByIdAsync(Guid id, CancellationToken cancellationToken) =>
         Task.FromResult(Items.FirstOrDefault(a => a.Id == id));
 
+    public Task<CompanyApplicationHistory> GetCompanyHistoryAsync(Guid companyId, Guid excludeApplicationId, CancellationToken cancellationToken)
+    {
+        var others = Items.Where(a => a.CompanyId == companyId && a.Id != excludeApplicationId).ToArray();
+        return Task.FromResult(new CompanyApplicationHistory(
+            others.Length,
+            others.Count(a => a.Status == ApplicationStatus.Rejected),
+            others.Count(a => a.Status == ApplicationStatus.Disbursed)));
+    }
+
+    public Task<IReadOnlyList<CreditApplication>> ListWithExpiredOffersAsync(DateTimeOffset now, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<CreditApplication>>(Items
+            .Where(a => a.Status is ApplicationStatus.Approved or ApplicationStatus.ApprovedWithConditions && a.CurrentOffer is { } o && o.IsExpired(now))
+            .ToArray());
+
     public Task<PagedResult<CreditApplication>> ListAsync(ApplicationFilter filter, CancellationToken cancellationToken)
     {
         var query = Items.AsEnumerable();

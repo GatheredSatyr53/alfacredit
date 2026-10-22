@@ -6,9 +6,13 @@ using Testcontainers.PostgreSql;
 namespace AlfaCredit.IntegrationTests.Infrastructure;
 
 /// <summary>Поднимает API в памяти поверх настоящего PostgreSQL в контейнере, с миграциями и seed-данными.</summary>
-public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string DemoPassword = "Demo123!";
+
+    // Program.cs создаёт bootstrap-логгер Serilog в статическом Log.Logger и замораживает его при сборке хоста:
+    // сборка двух хостов одновременно в одном процессе падает с «The logger is already frozen», поэтому сборка сериализована.
+    private static readonly object HostBuildLock = new();
 
     private readonly PostgreSqlContainer? _database = DockerAvailability.IsAvailable
         ? new PostgreSqlBuilder("postgres:16.15-alpine").Build()
@@ -20,14 +24,35 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         {
             await _database.StartAsync();
         }
+
+        await StartDependenciesAsync();
     }
 
     async Task IAsyncLifetime.DisposeAsync()
     {
         await base.DisposeAsync();
+        await StopDependenciesAsync();
         if (_database is not null)
         {
             await _database.DisposeAsync();
+        }
+    }
+
+    /// <summary>Дополнительные зависимости стенда, например заглушка сервиса скоринга.</summary>
+    protected virtual Task StartDependenciesAsync() => Task.CompletedTask;
+
+    protected virtual Task StopDependenciesAsync() => Task.CompletedTask;
+
+    /// <summary>Настройки, которыми отдельный стенд дополняет или переопределяет базовые.</summary>
+    protected virtual void ConfigureTestSettings(IWebHostBuilder builder)
+    {
+    }
+
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        lock (HostBuildLock)
+        {
+            return base.CreateHost(builder);
         }
     }
 
@@ -40,6 +65,12 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Seed:Enabled", "true");
         builder.UseSetting("Seed:DemoPassword", DemoPassword);
         builder.UseSetting("Swagger:Enabled", "true");
+        // Конвейер в тестах работает быстро, но с секундной паузой: отмена заявки сразу после создания остаётся возможной
+        builder.UseSetting("Processing:StageDelaySeconds", "1");
+        builder.UseSetting("Processing:PollIntervalMs", "100");
+        builder.UseSetting("Simulators:LatencyMs", "0");
+        builder.UseSetting("Simulators:FailureRate", "0");
+        ConfigureTestSettings(builder);
     }
 }
 
