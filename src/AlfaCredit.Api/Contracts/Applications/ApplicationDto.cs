@@ -15,6 +15,7 @@ namespace AlfaCredit.Api.Contracts.Applications;
 /// <param name="Purpose">Цель финансирования.</param>
 /// <param name="PurposeTitle">Название цели для интерфейса.</param>
 /// <param name="PurposeDescription">Описание цели от клиента.</param>
+/// <param name="NeedByDate">К какой дате клиенту нужны деньги; null, если дата не указана (в том числе у заявок, созданных до появления поля).</param>
 /// <param name="CreatedByUserId">Кто подал заявку.</param>
 /// <param name="CreatedAt">Создана (UTC).</param>
 /// <param name="UpdatedAt">Последнее изменение (UTC).</param>
@@ -37,6 +38,7 @@ public sealed record ApplicationDto(
     LoanPurpose Purpose,
     string PurposeTitle,
     string? PurposeDescription,
+    DateOnly? NeedByDate,
     Guid CreatedByUserId,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
@@ -60,6 +62,7 @@ public sealed record ApplicationSummaryDto(
     int TermMonths,
     LoanPurpose Purpose,
     string PurposeTitle,
+    DateOnly? NeedByDate,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt);
 

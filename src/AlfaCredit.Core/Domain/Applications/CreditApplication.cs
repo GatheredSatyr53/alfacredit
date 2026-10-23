@@ -49,6 +49,9 @@ public sealed class CreditApplication
 
     public string? PurposeDescription { get; private set; }
 
+    /// <summary>К какой дате клиенту нужны деньги. Пусто для заявок без даты; на конвейер и решение не влияет.</summary>
+    public DateOnly? NeedByDate { get; private set; }
+
     public ApplicationStatus Status { get; private set; }
 
     public DateTimeOffset CreatedAt { get; private set; }
@@ -97,7 +100,8 @@ public sealed class CreditApplication
         int termMonths,
         LoanPurpose purpose,
         string? purposeDescription,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        DateOnly? needByDate = null)
     {
         ArgumentNullException.ThrowIfNull(company);
         ArgumentNullException.ThrowIfNull(product);
@@ -136,6 +140,8 @@ public sealed class CreditApplication
             errors.Add("purposeDescription", $"Описание цели не длиннее {PurposeDescriptionMaxLength} символов.");
         }
 
+        NeedByDateRules.Validate(needByDate, DateOnly.FromDateTime(now.UtcDateTime), errors);
+
         errors.ThrowIfAny();
 
         var application = new CreditApplication
@@ -150,6 +156,7 @@ public sealed class CreditApplication
             TermMonths = termMonths,
             Purpose = purpose,
             PurposeDescription = string.IsNullOrWhiteSpace(purposeDescription) ? null : purposeDescription.Trim(),
+            NeedByDate = needByDate,
             Status = ApplicationStatus.Submitted,
             CreatedAt = now,
             UpdatedAt = now,

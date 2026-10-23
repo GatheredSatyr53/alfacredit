@@ -124,7 +124,7 @@ public sealed class ApplicationPipeline(
             yield return "Укажите ОГРН или ОГРНИП.";
         }
 
-        var needsStatements = application.Amount > 3_000_000 || application.Product.Type is ProductType.Investment or ProductType.CreditLine;
+        var needsStatements = ValidationRules.NeedsFinancialStatements(application.Amount, application.Product.Type);
         if (needsStatements && (company.AnnualExpenses is null || company.NetProfit is null))
         {
             yield return "Для этой суммы и продукта нужны расходы и чистая прибыль за последние 12 месяцев.";

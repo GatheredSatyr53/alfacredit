@@ -120,6 +120,23 @@
 
 Карточка компании. 403, если клиент не её представитель.
 
+## Предварительный подбор
+
+### POST /api/financing/preview
+
+Три вопроса клиента (на что, сколько, к какому дню) и необязательный срок. Возвращает подходящие продукты с платежом,
+переплатой, кредитной нагрузкой, ориентиром получения денег и объяснениями, а также продукты, которые не подходят, с причинами.
+Заявка не создаётся, расчёт не сохраняется. Клиент считает только для своих компаний (иначе `403`), сотрудник банка для любой.
+Полный контракт с примерами: [financing-preview.md](financing-preview.md).
+
+```json
+{ "companyId": "01a15975-ea5f-7a4f-863b-9035b3b8b2ca", "amount": 1500000, "purpose": "WorkingCapital", "needByDate": "2026-11-15", "termMonths": 12 }
+```
+
+Ответ 200: `summary`, `disclaimer`, `options[]` (`productCode`, `termMonths`, `cost`, `affordability`, `funding`, `explanations`,
+`limitations`, `requirements`, `applyWith`), `unsuitable[]` (`productCode`, `reasons[]`). Тело `options[].applyWith`
+отправляется в `POST /api/applications` без изменений. Ошибки `400` по полям `amount`, `purpose`, `needByDate`, `termMonths`, `companyId`.
+
 ## Заявки
 
 ### POST /api/applications
@@ -146,6 +163,7 @@
 | termMonths | int | да | 1..120, в границах продукта |
 | purpose | enum | да | `WorkingCapital`, `Equipment`, `Expansion`, `Refinancing`, `Other`; допустим для продукта |
 | purposeDescription | string | нет | до 1000 символов |
+| needByDate | date | нет | к какой дате нужны деньги, `YYYY-MM-DD`: не раньше сегодняшнего дня и не позже чем через 2 года; хранится и показывается, на обработку не влияет. Готовое тело заявки даёт `POST /api/financing/preview` (`options[].applyWith`) |
 
 Ответ 201, заголовок `Location: /api/applications/{id}`:
 

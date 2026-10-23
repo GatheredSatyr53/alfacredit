@@ -128,6 +128,8 @@ Compose читает `.env` из корня (образец: `.env.example`). У
 | `CONTRACTS_REVEAL_CODE` | `Contracts__RevealCodeInResponse` | `true` | Демо-режим: код подтверждения подписания дублируется в ответ API (в ленту он приходит всегда) |
 | `DEMO_MANAGER_ENABLED` | `DemoManager__Enabled` | `true` | Демо-режим: заявки в ручном рассмотрении получают смоделированный ответ менеджера; выключить при появлении настоящей очереди менеджера |
 | `DEMO_MANAGER_DELAY_SECONDS`, `DEMO_MANAGER_APPROVAL_PROBABILITY` | `DemoManager__DelaySeconds`, `DemoManager__ApprovalProbability` | `8`, `0.5` | Пауза до ответа смоделированного менеджера и вероятность одобрения (50/50) |
+| | `FinancingPreview__AutoDecisionBusinessDays`, `FinancingPreview__ManualReviewBusinessDays`, `FinancingPreview__CollateralBusinessDays` | `1`, `3`, `10` | Ориентир получения денег в рабочих днях для предварительного подбора: автоматическое решение, менеджер, залог |
+| | `FinancingPreview__ComfortableDebtLoad`, `FinancingPreview__HighDebtLoad`, `FinancingPreview__MaxNeedByDays` | `0.30`, `0.70`, `730` | Пороги кредитной нагрузки (доля месячной прибыли) и горизонт даты `needByDate` |
 | | `Contracts__SigningDays`, `Contracts__CodeTtlMinutes`, `Contracts__CodeMaxAttempts`, `Contracts__LenderName` | `5`, `10`, `5`, `AlfaCredit (демонстрационный банк)` | Срок подписания договора, срок и число попыток кода, наименование кредитора в договоре |
 
 Секреты в репозитории не хранятся: в `appsettings.json` ключ JWT пустой, для `dotnet run` он берётся из
@@ -161,48 +163,53 @@ Seed повторяем: при каждом старте добавляются
 3. В Swagger выполнить `POST /api/auth/login` с телом `{"login": "client_good", "password": "Demo123!"}`,
    нажать Authorize и вставить `accessToken`.
 4. `GET /api/companies`: ООО «Ромашка», скопировать `id`.
-5. `POST /api/applications` с телом
-   `{"companyId": "<id>", "productCode": "working-capital", "amount": 1500000, "termMonths": 12, "purpose": "WorkingCapital"}`:
-   ответ `201` с `id` и номером `AC-000001`.
-6. Несколько раз подряд выполнить `GET /api/applications/{id}`: статус меняется каждые 2 секунды
+5. `POST /api/financing/preview` с телом
+   `{"companyId": "<id>", "amount": 1500000, "purpose": "WorkingCapital", "needByDate": "<дата через 3 недели>", "termMonths": 12}`:
+   ответ `200` с четырьмя вариантами (первый `isRecommended`: «Кредитная линия», платёж 137 877,18 ₽, переплата 154 526,12 ₽,
+   деньги ориентировочно на следующий рабочий день), «Инвестиционный кредит» в `unsuitable` с причиной по цели. Заявка при этом не создаётся.
+   Без `termMonths` срок подбирается (6 мес. при посильной нагрузке), под `client_new` ответ без вариантов с объяснением «возраст бизнеса».
+6. `POST /api/applications` с телом
+   `{"companyId": "<id>", "productCode": "working-capital", "amount": 1500000, "termMonths": 12, "purpose": "WorkingCapital", "needByDate": "<та же дата>"}`
+   (или `options[].applyWith` из предыдущего шага): ответ `201` с `id` и номером `AC-000001`; `needByDate` необязательно.
+7. Несколько раз подряд выполнить `GET /api/applications/{id}`: статус меняется каждые 2 секунды
    «Отправлена» → «Проверка данных» → «Сбор сведений» → «Оценка риска» → «Принятие решения» → «Одобрена».
    В ответе появятся `decision` с причинами простым языком и `offer` с суммой, ставкой и платежом,
    в `availableActions` будут `acceptOffer` и `declineOffer`.
-7. `POST /api/applications/{id}/offer/accept`: статус «Подписание договора», `offer.response` = `Accepted`, в ответе `contract`
+8. `POST /api/applications/{id}/offer/accept`: статус «Подписание договора», `offer.response` = `Accepted`, в ответе `contract`
    со статусом `AwaitingSignature`, номером `KD-000001`, суммой, ставкой, платежом, переплатой и `documentUrl`;
    `availableActions` = `signContract`, `cancel`. Повторный вызов даёт `409`.
-8. `GET /api/applications/{id}/contract`: стороны, условия и график из 12 платежей с остатком 0 в последней строке;
+9. `GET /api/applications/{id}/contract`: стороны, условия и график из 12 платежей с остатком 0 в последней строке;
    `GET /api/applications/{id}/contract/document` открывает печатную форму договора (HTML).
-9. `POST /api/applications/{id}/contract/sign/request-code`: в ответе `demoCode` и срок действия кода, тот же код
+10. `POST /api/applications/{id}/contract/sign/request-code`: в ответе `demoCode` и срок действия кода, тот же код
    в `GET /api/feed` (событие `SigningCode`). Сначала отправить неверный код в `POST /api/applications/{id}/contract/sign`
    с телом `{"code": "000000"}`: ответ `400` с `errors.code` «Осталось попыток: 4». Затем верный код: статус «Договор подписан».
-10. Через ~2 секунды `GET /api/applications/{id}`: статус «Средства выданы» (терминальный), `disbursement`
+11. Через ~2 секунды `GET /api/applications/{id}`: статус «Средства выданы» (терминальный), `disbursement`
     с номером платёжного поручения `PO-…`, суммой и счётом; в `history` девять записей от «Отправлена» до «Средства выданы».
-11. `GET /api/feed`: события «Заявка принята», «Заявка одобрена», «Договор готов к подписанию», «Код подтверждения»,
+12. `GET /api/feed`: события «Заявка принята», «Заявка одобрена», «Договор готов к подписанию», «Код подтверждения»,
     «Договор подписан», «Средства выданы»; `GET /api/feed/unread-count`.
-12. Войти как `client_medium` и подать `working-capital` на 3 000 000 ₽ на 24 мес: через ~10 секунд
+13. Войти как `client_medium` и подать `working-capital` на 3 000 000 ₽ на 24 мес: через ~10 секунд
    статус «Одобрена с изменением условий», в `decision.conditions` объяснение, сумма 2 400 000 ₽, ставка 22.5 %.
-13. Войти как `client_bad` и подать `express` на 500 000 ₽ на 6 мес: статус «Отказ», в `decision.reasons`
+14. Войти как `client_bad` и подать `express` на 500 000 ₽ на 6 мес: статус «Отказ», в `decision.reasons`
     четыре стоп-фактора с объяснениями.
-14. Войти как `client_manual` и подать `working-capital` на 8 000 000 ₽: статус «Рассмотрение менеджером»,
+15. Войти как `client_manual` и подать `working-capital` на 8 000 000 ₽: статус «Рассмотрение менеджером»,
     `decision.recommendedType` = `Approved`. Через ~8 секунд смоделированный менеджер (демо-режим) отвечает 50/50:
     «Одобрена с изменением условий» с предложением 8 000 000 ₽ под 21 % (клиент может принять его и дойти до выдачи)
     или «Отказ» с объяснением. В `decision` будет `decidedBy` = `Manager`, `isSimulated` = `true`, в `history` запись
     «Смоделированный ответ менеджера (демо-режим)». После `docker compose restart api` решение не меняется.
-15. Войти как `manager`: `GET /api/applications/{id}` любой заявки показывает `scoring` с баллом, грейдом, факторами,
+16. Войти как `manager`: `GET /api/applications/{id}` любой заявки показывает `scoring` с баллом, грейдом, факторами,
     `source` = `External`, `modelVersion` = `stub-rules-1.0`, `missingData`, `requestId` и `durationMs`,
     а также `checks` с результатами четырёх источников; `GET /api/feed` содержит событие о новой заявке в очереди.
     В логе `scoring` виден запрос с тем же `request_id`.
-16. Недоступность скоринга: `docker compose stop scoring`, затем подать заявку от `client_good` (`express`, 300 000 ₽ на 6 мес).
+17. Недоступность скоринга: `docker compose stop scoring`, затем подать заявку от `client_good` (`express`, 300 000 ₽ на 6 мес).
     Заявка не зависает: через несколько секунд (таймаут и два повтора) она одобрена, у менеджера в `scoring`
     `source` = `RulesFallback` и предупреждение `external_scoring_unavailable`, в `/health/ready` проверка `scoring`
     в статусе `Degraded`. `docker compose start scoring` возвращает внешний скоринг.
-17. Перезапуск посреди обработки: подать заявку и в течение пары секунд выполнить `docker compose restart api`.
+18. Перезапуск посреди обработки: подать заявку и в течение пары секунд выполнить `docker compose restart api`.
     После старта в логе `Requeued 1 job(s) interrupted by the previous shutdown`, заявка доходит до решения,
     в `history` каждый статус встречается один раз.
-18. Перезапустить API (`docker compose restart api`) и повторить `GET /api/applications/{id}`: всё на месте,
+19. Перезапустить API (`docker compose restart api`) и повторить `GET /api/applications/{id}`: всё на месте,
     в логе `Seeding completed: users +0, products +0, companies +0`.
-19. Для демонстрации отказоустойчивости задать в `.env` `SIMULATORS_FAILURE_RATE=0.5` и перезапустить:
+20. Для демонстрации отказоустойчивости задать в `.env` `SIMULATORS_FAILURE_RATE=0.5` и перезапустить:
     в логе видны повторы запросов к источникам, а при трёх сбоях критичного источника заявка уходит менеджеру.
 
 Те же запросы в виде коллекции: [docs/requests.http](docs/requests.http) (VS Code REST Client, Rider)
@@ -221,7 +228,8 @@ Seed повторяем: при каждом старте добавляются
 | GET | `/api/products`, `/api/products/{code}` | все | Каталог кредитных продуктов |
 | GET | `/api/companies`, `/api/companies/{id}` | по токену | Компании клиента (банк видит все) |
 | GET | `/api/applications` | по токену | Список заявок с фильтром по статусу и пагинацией |
-| POST | `/api/applications` | Client | Подать заявку; запускает конвейер; `400` с ошибками по полям |
+| POST | `/api/financing/preview` | по токену | Предварительный подбор «нужны деньги к дате»: варианты, стоимость, нагрузка, ориентир даты, причины отказа; заявку не создаёт ([docs/financing-preview.md](docs/financing-preview.md)) |
+| POST | `/api/applications` | Client | Подать заявку (необязательно `needByDate`); запускает конвейер; `400` с ошибками по полям |
 | GET | `/api/applications/{id}` | по токену | Заявка: статус, решение, предложение, действия, история; банку также скоринг и проверки |
 | POST | `/api/applications/{id}/offer/accept` | Client | Принять предложение банка |
 | POST | `/api/applications/{id}/offer/decline` | Client | Отклонить предложение |
@@ -240,7 +248,7 @@ Seed повторяем: при каждом старте добавляются
 ├─ src/                 Api, Core, Infrastructure
 ├─ scoring/             сервис скоринга: заглушка по контракту (Python, stdlib), Dockerfile, тесты
 ├─ tests/               UnitTests, IntegrationTests
-├─ docs/                api.md, completion-flow.md, state-machine.md, decision-logic.md, data-model.md, scoring-contract.md, openapi.json, requests.http, postman_collection.json, backend-plan.md
+├─ docs/                api.md, financing-preview.md, completion-flow.md, state-machine.md, decision-logic.md, data-model.md, scoring-contract.md, openapi.json, requests.http, postman_collection.json, backend-plan.md
 ├─ .github/workflows/   CI: restore в locked-mode, build, test, docker build
 ├─ Dockerfile           multi-stage сборка API, non-root runtime
 ├─ docker-compose.yml   db + scoring + api

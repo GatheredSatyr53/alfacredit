@@ -95,7 +95,7 @@
           "Applications"
         ],
         "summary": "Подать кредитную заявку.",
-        "description": "Проверяет поля запроса и соответствие продукту: сумму, срок, цель и возраст бизнеса.\nПри ошибке возвращает 400 с перечнем проблем по полям (errors.amount, errors.termMonths и т.д.).\nЗаявка создаётся сразу в статусе Submitted и попадает в обработку банка.",
+        "description": "Проверяет поля запроса и соответствие продукту: сумму, срок, цель и возраст бизнеса.\nПри ошибке возвращает 400 с перечнем проблем по полям (errors.amount, errors.termMonths и т.д.).\nНеобязательное поле needByDate (к какой дате нужны деньги) сохраняется и показывается в заявке; тело можно взять из options[].applyWith ответа POST /api/financing/preview.\nЗаявка создаётся сразу в статусе Submitted и попадает в обработку банка.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1149,6 +1149,74 @@
         ]
       }
     },
+    "/api/financing/preview": {
+      "post": {
+        "tags": [
+          "Financing"
+        ],
+        "summary": "Подобрать варианты финансирования по цели, сумме, дате и необязательному сроку.",
+        "description": "Проверяет все активные продукты по тем же правилам, что подача заявки (цель, сумма, срок, возраст бизнеса),\nсчитает платёж, переплату, кредитную нагрузку и ориентир получения денег, объясняет ограничения.\nЕсли срок не указан, он подбирается для каждого продукта. Вариант из ответа отправляется как заявка телом options[].applyWith.\nКлиент может считать только для своих компаний, сотрудник банка для любой. Контракт: docs/financing-preview.md.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancingPreviewRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancingPreviewRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancingPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Расчёт выполнен; при отсутствии подходящих продуктов options пустой, причины в unsuitable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancingPreviewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка валидации: errors.amount, errors.purpose, errors.needByDate, errors.termMonths, errors.companyId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Пользователь не представитель компании.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/api/products": {
       "get": {
         "tags": [
@@ -1224,6 +1292,39 @@
         ],
         "type": "string"
       },
+      "AffordabilityDto": {
+        "type": "object",
+        "properties": {
+          "monthlyProfit": {
+            "type": "number",
+            "description": "Месячная прибыль, по которой считается нагрузка, ₽.",
+            "format": "double"
+          },
+          "currentDebtPayments": {
+            "type": "number",
+            "description": "Текущие ежемесячные платежи по кредитам из карточки компании, ₽.",
+            "format": "double"
+          },
+          "debtLoad": {
+            "type": "number",
+            "description": "(текущие платежи + новый платёж) / месячная прибыль, не больше 9.99; null, если прибыли нет.",
+            "format": "double",
+            "nullable": true
+          },
+          "level": {
+            "$ref": "#/components/schemas/DebtLoadLevel"
+          },
+          "profitBasis": {
+            "$ref": "#/components/schemas/ProfitBasis"
+          },
+          "explanation": {
+            "type": "string",
+            "description": "Фраза для клиента."
+          }
+        },
+        "additionalProperties": false,
+        "description": "«Потяну ли платёж»: кредитная нагрузка по формуле сервиса скоринга."
+      },
       "ApplicationCompanyDto": {
         "type": "object",
         "properties": {
@@ -1282,6 +1383,12 @@
           "purposeDescription": {
             "type": "string",
             "description": "Описание цели от клиента.",
+            "nullable": true
+          },
+          "needByDate": {
+            "type": "string",
+            "description": "К какой дате клиенту нужны деньги; null, если дата не указана (в том числе у заявок, созданных до появления поля).",
+            "format": "date",
             "nullable": true
           },
           "createdByUserId": {
@@ -1483,6 +1590,11 @@
           "purposeTitle": {
             "type": "string"
           },
+          "needByDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -1528,6 +1640,35 @@
         },
         "additionalProperties": false,
         "description": "Страница результатов."
+      },
+      "ApplyWithDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productCode": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "termMonths": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/LoanPurpose"
+          },
+          "needByDate": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Тело POST /api/applications для выбранного варианта: отправляется без изменений."
       },
       "CancelApplicationRequest": {
         "type": "object",
@@ -1959,6 +2100,13 @@
             "description": "Свободное описание цели, до 1000 символов.",
             "nullable": true,
             "example": "Закупка товара к высокому сезону"
+          },
+          "needByDate": {
+            "type": "string",
+            "description": "К какой дате нужны деньги (необязательно): не раньше сегодняшнего дня и не позже чем через 2 года. См. docs/financing-preview.md.",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-11-15"
           }
         },
         "additionalProperties": false,
@@ -1982,6 +2130,14 @@
         },
         "additionalProperties": false,
         "description": "Результат создания заявки."
+      },
+      "DebtLoadLevel": {
+        "enum": [
+          "Comfortable",
+          "Moderate",
+          "High"
+        ],
+        "type": "string"
       },
       "DecisionActor": {
         "enum": [
@@ -2270,6 +2426,197 @@
         ],
         "type": "string"
       },
+      "FinancingOptionDto": {
+        "type": "object",
+        "properties": {
+          "productCode": {
+            "type": "string",
+            "description": "Код продукта из GET /api/products."
+          },
+          "productName": {
+            "type": "string",
+            "description": "Название продукта."
+          },
+          "productType": {
+            "$ref": "#/components/schemas/ProductType"
+          },
+          "isRecommended": {
+            "type": "boolean",
+            "description": "Первый в списке после сортировки."
+          },
+          "amount": {
+            "type": "number",
+            "description": "Сумма из запроса, ₽.",
+            "format": "double"
+          },
+          "termMonths": {
+            "type": "integer",
+            "description": "Срок расчёта: из запроса или подобранный.",
+            "format": "int32"
+          },
+          "termSuggested": {
+            "type": "boolean",
+            "description": "true, если срок не был указан и подобран системой."
+          },
+          "termRange": {
+            "$ref": "#/components/schemas/TermRangeDto"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/OptionCostDto"
+          },
+          "affordability": {
+            "$ref": "#/components/schemas/AffordabilityDto"
+          },
+          "funding": {
+            "$ref": "#/components/schemas/FundingEstimateDto"
+          },
+          "explanations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreviewNoteDto"
+            },
+            "description": "Почему вариант подходит: product_about, no_collateral, auto_decision, term_suggested, cheapest, data_prefilled."
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreviewNoteDto"
+            },
+            "description": "Что может изменить условия: rate_depends_on_risk, manual_review_amount, collateral_required, amount_may_be_reduced, high_debt_load, deadline_missed."
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreviewNoteDto"
+            },
+            "description": "Что нужно для оформления: credit_history_consent, financials_required, collateral_documents."
+          },
+          "applyWith": {
+            "$ref": "#/components/schemas/ApplyWithDto"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Подходящий продукт с расчётом стоимости, нагрузки и ориентиром получения денег."
+      },
+      "FinancingPreviewDto": {
+        "type": "object",
+        "properties": {
+          "calculatedAt": {
+            "type": "string",
+            "description": "Момент расчёта (UTC); ответ не сохраняется.",
+            "format": "date-time"
+          },
+          "company": {
+            "$ref": "#/components/schemas/PreviewCompanyDto"
+          },
+          "request": {
+            "$ref": "#/components/schemas/PreviewRequestDto"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Одна фраза для заголовка: сколько вариантов и какой рекомендован, либо почему вариантов нет."
+          },
+          "disclaimer": {
+            "type": "string",
+            "description": "Оговорка под расчётом, выводится как есть."
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancingOptionDto"
+            },
+            "description": "Подходящие продукты: сначала те, что успевают к дате, затем по возрастанию переплаты; первый помечен isRecommended."
+          },
+          "unsuitable": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnsuitableProductDto"
+            },
+            "description": "Продукты, которые не подходят, с причинами по кодам."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Результат предварительного подбора: подходящие варианты с расчётом и продукты, которые не подходят, с причинами. Контракт: docs/financing-preview.md."
+      },
+      "FinancingPreviewRequest": {
+        "required": [
+          "companyId",
+          "needByDate",
+          "purpose"
+        ],
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "description": "Компания, для которой подбирается финансирование. Список своих компаний: GET /api/companies.",
+            "format": "uuid",
+            "example": "0199f3a2-5b3c-7b1a-9c0e-6d1f2a3b4c5d"
+          },
+          "amount": {
+            "maximum": 1000000000,
+            "minimum": 1,
+            "type": "number",
+            "description": "Нужная сумма в рублях.",
+            "format": "double",
+            "example": 1500000
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/LoanPurpose"
+          },
+          "needByDate": {
+            "type": "string",
+            "description": "К какой дате нужны деньги: не раньше сегодняшнего дня и не позже чем через 2 года.",
+            "format": "date",
+            "example": "2026-11-15"
+          },
+          "termMonths": {
+            "maximum": 120,
+            "minimum": 1,
+            "type": "integer",
+            "description": "Желаемый срок возврата в месяцах. Если не указан, срок подбирается для каждого продукта.",
+            "format": "int32",
+            "nullable": true,
+            "example": 12
+          }
+        },
+        "additionalProperties": false,
+        "description": "Три вопроса клиента для предварительного подбора: на что деньги, сколько и к какому дню. Заявка не создаётся."
+      },
+      "FundingEstimateDto": {
+        "type": "object",
+        "properties": {
+          "decisionPath": {
+            "$ref": "#/components/schemas/FundingPath"
+          },
+          "businessDays": {
+            "type": "integer",
+            "description": "Рабочих дней от даты расчёта до денег на счёте.",
+            "format": "int32"
+          },
+          "expectedDate": {
+            "type": "string",
+            "description": "Ориентировочная дата получения денег.",
+            "format": "date"
+          },
+          "inTime": {
+            "type": "boolean",
+            "description": "Ориентир не позже нужной даты."
+          },
+          "explanation": {
+            "type": "string",
+            "description": "Фраза для клиента: почему такой срок и успеваем ли."
+          }
+        },
+        "additionalProperties": false,
+        "description": "«Успею ли к дате»: ориентир получения денег."
+      },
+      "FundingPath": {
+        "enum": [
+          "Auto",
+          "ManualReview"
+        ],
+        "type": "string"
+      },
       "LegalForm": {
         "enum": [
           "Ooo",
@@ -2389,6 +2736,121 @@
         ],
         "type": "string"
       },
+      "OptionCostDto": {
+        "type": "object",
+        "properties": {
+          "interestRate": {
+            "type": "number",
+            "description": "Базовая ставка продукта, % годовых (грейд A).",
+            "format": "double"
+          },
+          "maxInterestRate": {
+            "type": "number",
+            "description": "Базовая ставка + 3 п.п. (грейд C).",
+            "format": "double"
+          },
+          "monthlyPayment": {
+            "type": "number",
+            "description": "Аннуитетный платёж при базовой ставке, ₽.",
+            "format": "double"
+          },
+          "maxMonthlyPayment": {
+            "type": "number",
+            "description": "Платёж при верхней границе ставки, ₽.",
+            "format": "double"
+          },
+          "totalPayment": {
+            "type": "number",
+            "description": "Сумма всех платежей по графику при базовой ставке, ₽.",
+            "format": "double"
+          },
+          "totalInterest": {
+            "type": "number",
+            "description": "Переплата при базовой ставке, ₽.",
+            "format": "double"
+          },
+          "maxTotalInterest": {
+            "type": "number",
+            "description": "Переплата при верхней границе ставки, ₽.",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Стоимость при базовой ставке продукта и при верхней границе ставки автоматического одобрения (+3 п.п.)."
+      },
+      "PreviewCompanyDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Идентификатор компании.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Наименование."
+          },
+          "inn": {
+            "type": "string",
+            "description": "ИНН."
+          },
+          "businessAgeMonths": {
+            "type": "integer",
+            "description": "Полных месяцев с даты регистрации на дату расчёта.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Компания в подборе."
+      },
+      "PreviewNoteDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Объяснение, ограничение, требование или причина несоответствия: код для интерфейса и текст для клиента."
+      },
+      "PreviewRequestDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Сумма, ₽.",
+            "format": "double"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/LoanPurpose"
+          },
+          "purposeTitle": {
+            "type": "string",
+            "description": "Название цели для интерфейса."
+          },
+          "needByDate": {
+            "type": "string",
+            "description": "К какой дате нужны деньги.",
+            "format": "date"
+          },
+          "daysUntilNeeded": {
+            "type": "integer",
+            "description": "Дней от даты расчёта до needByDate.",
+            "format": "int32"
+          },
+          "termMonths": {
+            "type": "integer",
+            "description": "Срок из запроса; null, если не указан и подобран для каждого продукта.",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Эхо запроса."
+      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -2486,6 +2948,14 @@
           "Overdraft",
           "CreditLine",
           "Express"
+        ],
+        "type": "string"
+      },
+      "ProfitBasis": {
+        "enum": [
+          "NetProfit",
+          "RevenueMinusExpenses",
+          "RevenueEstimate"
         ],
         "type": "string"
       },
@@ -2688,6 +3158,21 @@
         ],
         "type": "string"
       },
+      "TermRangeDto": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "max": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Границы срока продукта, мес."
+      },
       "UnreadCountDto": {
         "type": "object",
         "properties": {
@@ -2698,6 +3183,25 @@
         },
         "additionalProperties": false,
         "description": "Число непрочитанных событий."
+      },
+      "UnsuitableProductDto": {
+        "type": "object",
+        "properties": {
+          "productCode": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreviewNoteDto"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "description": "Продукт, который не подходит, с причинами: purpose_not_allowed, amount_below_min, amount_above_max, term_out_of_range, business_too_young, product_inactive."
       },
       "UserDto": {
         "type": "object",
@@ -2793,6 +3297,10 @@
     {
       "name": "Feed",
       "description": "Лента событий пользователя: статусы заявок, решения, предложения, запросы банка."
+    },
+    {
+      "name": "Financing",
+      "description": "Предварительный подбор финансирования: «нужны деньги к дате». Заявка не создаётся, расчёт не сохраняется."
     },
     {
       "name": "Products",

@@ -84,6 +84,7 @@ erDiagram
         int term_months
         varchar purpose
         varchar purpose_description
+        date need_by_date "к какой дате нужны деньги; null, если не указана"
         varchar status
         timestamptz created_at
         timestamptz updated_at

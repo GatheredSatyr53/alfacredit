@@ -36,4 +36,8 @@ public sealed class CreateApplicationRequest
     /// <example>Закупка товара к высокому сезону</example>
     [StringLength(1000, ErrorMessage = "Описание цели не длиннее 1000 символов.")]
     public string? PurposeDescription { get; init; }
+
+    /// <summary>К какой дате нужны деньги (необязательно): не раньше сегодняшнего дня и не позже чем через 2 года. См. docs/financing-preview.md.</summary>
+    /// <example>2026-11-15</example>
+    public DateOnly? NeedByDate { get; init; }
 }

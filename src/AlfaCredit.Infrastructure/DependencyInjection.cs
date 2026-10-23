@@ -3,6 +3,7 @@ using AlfaCredit.Core.Features.Applications;
 using AlfaCredit.Core.Features.Contracts;
 using AlfaCredit.Core.Features.Decisions;
 using AlfaCredit.Core.Features.Feed;
+using AlfaCredit.Core.Features.Financing;
 using AlfaCredit.Core.Features.Processing;
 using AlfaCredit.Core.Features.Scoring;
 using AlfaCredit.Infrastructure.Persistence;
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddOptions<ScoringOptions>().Bind(configuration.GetSection(ScoringOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
         services.AddOptions<ContractOptions>().Bind(configuration.GetSection(ContractOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
         services.AddOptions<DemoManagerOptions>().Bind(configuration.GetSection(DemoManagerOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
+        services.AddOptions<FinancingPreviewOptions>().Bind(configuration.GetSection(FinancingPreviewOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3)));
@@ -84,6 +86,10 @@ public static class DependencyInjection
         // Сценарии и конвейер
         services.AddSingleton(provider => new DecisionPolicy(provider.GetRequiredService<IOptions<DecisionPolicyOptions>>().Value));
         services.AddSingleton<IDemoManagerChooser, RandomDemoManagerChooser>();
+        services.AddSingleton(provider => new FinancingAdvisor(
+            provider.GetRequiredService<IOptions<FinancingPreviewOptions>>().Value,
+            provider.GetRequiredService<IOptions<DecisionPolicyOptions>>().Value));
+        services.AddScoped<FinancingPreviewService>();
         services.AddScoped<FeedService>();
         services.AddScoped<ApplicationService>();
         services.AddScoped<ContractService>();

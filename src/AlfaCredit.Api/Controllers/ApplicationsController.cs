@@ -48,6 +48,7 @@ public sealed class ApplicationsController(ApplicationService applications) : Co
     /// <remarks>
     /// Проверяет поля запроса и соответствие продукту: сумму, срок, цель и возраст бизнеса.
     /// При ошибке возвращает 400 с перечнем проблем по полям (errors.amount, errors.termMonths и т.д.).
+    /// Необязательное поле needByDate (к какой дате нужны деньги) сохраняется и показывается в заявке; тело можно взять из options[].applyWith ответа POST /api/financing/preview.
     /// Заявка создаётся сразу в статусе Submitted и попадает в обработку банка.
     /// </remarks>
     /// <response code="201">Заявка создана. В заголовке Location адрес заявки.</response>
@@ -66,7 +67,8 @@ public sealed class ApplicationsController(ApplicationService applications) : Co
             request.Amount,
             request.TermMonths,
             request.Purpose!.Value,
-            request.PurposeDescription);
+            request.PurposeDescription,
+            request.NeedByDate);
 
         var application = await applications.CreateAsync(command, User.ToActor(), cancellationToken);
         var response = new CreateApplicationResponse(application.Id, application.Number, application.Status);

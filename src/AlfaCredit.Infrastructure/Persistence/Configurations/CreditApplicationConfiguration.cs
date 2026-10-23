@@ -48,6 +48,7 @@ internal sealed class CreditApplicationConfiguration : IEntityTypeConfiguration<
         builder.Property(a => a.TermMonths).HasColumnName("term_months").IsRequired();
         builder.Property(a => a.Purpose).HasColumnName("purpose").HasConversion<string>().HasMaxLength(32).IsRequired();
         builder.Property(a => a.PurposeDescription).HasColumnName("purpose_description").HasMaxLength(CreditApplication.PurposeDescriptionMaxLength);
+        builder.Property(a => a.NeedByDate).HasColumnName("need_by_date");
         builder.Property(a => a.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(32).IsRequired();
         builder.Property(a => a.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(a => a.UpdatedAt).HasColumnName("updated_at").IsRequired();

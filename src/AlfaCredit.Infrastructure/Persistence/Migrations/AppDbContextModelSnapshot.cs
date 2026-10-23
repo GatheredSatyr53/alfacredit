@@ -96,6 +96,10 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by_user_id");
 
+                    b.Property<DateOnly?>("NeedByDate")
+                        .HasColumnType("date")
+                        .HasColumnName("need_by_date");
+
                     b.Property<string>("Number")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
