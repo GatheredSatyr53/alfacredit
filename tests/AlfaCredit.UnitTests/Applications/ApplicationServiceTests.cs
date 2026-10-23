@@ -34,6 +34,18 @@ public sealed class ApplicationServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_passes_need_by_date_to_the_application_and_mentions_it_in_the_feed()
+    {
+        var service = CreateService();
+        var needBy = DateOnly.FromDateTime(TestData.Now.UtcDateTime).AddDays(20);
+
+        var application = await service.CreateAsync(Command() with { NeedByDate = needBy }, Client, CancellationToken.None);
+
+        application.NeedByDate.ShouldBe(needBy);
+        _feed.Items.ShouldContain(f => f.Body.Contains($"Деньги нужны к {needBy:dd.MM.yyyy}"));
+    }
+
+    [Fact]
     public async Task CreateAsync_rejects_user_who_is_not_a_member_of_the_company()
     {
         var service = CreateService();

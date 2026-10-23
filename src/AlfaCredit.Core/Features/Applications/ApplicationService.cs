@@ -67,15 +67,17 @@ public sealed class ApplicationService(
             command.TermMonths,
             command.Purpose,
             command.PurposeDescription,
-            now);
+            now,
+            command.NeedByDate);
 
         applications.Add(application);
         jobs.Add(ProcessingJob.Create(application.Id, ProcessingStage.Validate, now, processingOptions.Value.StageDelay, processingOptions.Value.MaxAttempts));
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Номер заявки выдаёт база, поэтому событие ленты создаётся после первого сохранения
+        var needBy = application.NeedByDate is { } needByDate ? $" Деньги нужны к {needByDate:dd.MM.yyyy}." : string.Empty;
         feed.NotifyCompany(application, FeedItemType.StatusChanged, $"Заявка {application.Number} принята",
-            $"{product!.Name}, {Money.FormatRub(application.Amount)} на {application.TermMonths} мес. Автоматическая проверка начнётся через несколько секунд.");
+            $"{product!.Name}, {Money.FormatRub(application.Amount)} на {application.TermMonths} мес.{needBy} Автоматическая проверка начнётся через несколько секунд.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await NotifySafeAsync(application, cancellationToken);
 

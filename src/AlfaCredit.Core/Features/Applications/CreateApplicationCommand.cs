@@ -8,4 +8,5 @@ public sealed record CreateApplicationCommand(
     decimal Amount,
     int TermMonths,
     LoanPurpose Purpose,
-    string? PurposeDescription);
+    string? PurposeDescription,
+    DateOnly? NeedByDate = null);

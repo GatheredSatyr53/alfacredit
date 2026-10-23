@@ -61,6 +61,43 @@ public sealed class CreditApplicationTests
     }
 
     [Fact]
+    public void Create_stores_need_by_date_and_keeps_it_optional()
+    {
+        var company = TestData.Company();
+        var product = TestData.Product();
+        var needBy = new DateOnly(2026, 11, 15);
+
+        var withDate = CreditApplication.Create(company, product, UserId, 1_000_000, 12, LoanPurpose.WorkingCapital, null, TestData.Now, needBy);
+        var withoutDate = CreditApplication.Create(company, product, UserId, 1_000_000, 12, LoanPurpose.WorkingCapital, null, TestData.Now);
+
+        withDate.NeedByDate.ShouldBe(needBy);
+        withoutDate.NeedByDate.ShouldBeNull();
+    }
+
+    [Theory]
+    [InlineData(-1, "раньше сегодняшнего дня")]
+    [InlineData(731, "не дальше чем на 730 дней")]
+    public void Create_rejects_need_by_date_outside_the_allowed_window(int daysFromToday, string expectedMessagePart)
+    {
+        var today = DateOnly.FromDateTime(TestData.Now.UtcDateTime);
+
+        var exception = Should.Throw<ValidationException>(() =>
+            CreditApplication.Create(TestData.Company(), TestData.Product(), UserId, 1_000_000, 12, LoanPurpose.WorkingCapital, null, TestData.Now, today.AddDays(daysFromToday)));
+
+        exception.Errors.Keys.ShouldBe(["needByDate"]);
+        exception.Errors["needByDate"][0].ShouldContain(expectedMessagePart);
+    }
+
+    [Fact]
+    public void Create_accepts_today_and_the_last_day_of_the_window_as_need_by_date()
+    {
+        var today = DateOnly.FromDateTime(TestData.Now.UtcDateTime);
+
+        Should.NotThrow(() => CreditApplication.Create(TestData.Company(), TestData.Product(), UserId, 1_000_000, 12, LoanPurpose.WorkingCapital, null, TestData.Now, today));
+        Should.NotThrow(() => CreditApplication.Create(TestData.Company(), TestData.Product(), UserId, 1_000_000, 12, LoanPurpose.WorkingCapital, null, TestData.Now, today.AddDays(730)));
+    }
+
+    [Fact]
     public void Cancel_moves_submitted_application_to_cancelled_with_reason()
     {
         var application = CreditApplication.Create(TestData.Company(), TestData.Product(), UserId, 1_000_000, 12, LoanPurpose.WorkingCapital, null, TestData.Now);

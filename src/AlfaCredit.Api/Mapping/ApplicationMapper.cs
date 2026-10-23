@@ -23,6 +23,7 @@ public static class ApplicationMapper
         application.Purpose,
         application.Purpose.Title(),
         application.PurposeDescription,
+        application.NeedByDate,
         application.CreatedByUserId,
         application.CreatedAt,
         application.UpdatedAt,
@@ -45,6 +46,7 @@ public static class ApplicationMapper
         application.TermMonths,
         application.Purpose,
         application.Purpose.Title(),
+        application.NeedByDate,
         application.CreatedAt,
         application.UpdatedAt);
 

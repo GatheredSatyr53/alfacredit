@@ -66,9 +66,21 @@ sequenceDiagram
 
 ```json
 {
-  "calculatedAt": "2026-10-23T14:00:00+00:00",
-  "company": { "id": "01a15975-ea5f-7a4f-863b-9035b3b8b2ca", "name": "ООО «Ромашка»", "inn": "7701234567", "businessAgeMonths": 91 },
-  "request": { "amount": 1500000, "purpose": "WorkingCapital", "purposeTitle": "Пополнение оборотных средств", "needByDate": "2026-11-15", "daysUntilNeeded": 23, "termMonths": 12 },
+  "calculatedAt": "2026-10-23T21:00:22.4371762+00:00",
+  "company": {
+    "id": "01a1681b-af21-7f3c-9090-2fedb48bbc20",
+    "name": "ООО «Ромашка»",
+    "inn": "7701234567",
+    "businessAgeMonths": 91
+  },
+  "request": {
+    "amount": 1500000,
+    "purpose": "WorkingCapital",
+    "purposeTitle": "Пополнение оборотных средств",
+    "needByDate": "2026-11-15",
+    "daysUntilNeeded": 23,
+    "termMonths": 12
+  },
   "summary": "Подходят 4 варианта из 5. Рекомендуем «Кредитная линия»: платёж 137 877 ₽ в месяц, переплата 154 526 ₽ за 12 мес., деньги ориентировочно 26.10.2026, к нужной дате успеваем.",
   "disclaimer": "Предварительный расчёт по базовым ставкам продуктов и данным компании из кабинета. Точные условия банк назначает после проверки заявки: ставка зависит от оценки риска, сумма может быть снижена. Заявка не создана.",
   "options": [
@@ -80,7 +92,10 @@ sequenceDiagram
       "amount": 1500000,
       "termMonths": 12,
       "termSuggested": false,
-      "termRange": { "min": 6, "max": 36 },
+      "termRange": {
+        "min": 6,
+        "max": 36
+      },
       "cost": {
         "interestRate": 18.5,
         "maxInterestRate": 21.5,
@@ -91,8 +106,8 @@ sequenceDiagram
         "maxTotalInterest": 180370.38
       },
       "affordability": {
-        "monthlyProfit": 600000,
-        "currentDebtPayments": 150000,
+        "monthlyProfit": 600000.0,
+        "currentDebtPayments": 150000.0,
         "debtLoad": 0.48,
         "level": "Moderate",
         "profitBasis": "NetProfit",
@@ -103,22 +118,50 @@ sequenceDiagram
         "businessDays": 1,
         "expectedDate": "2026-10-26",
         "inTime": true,
-        "explanation": "Решение принимается автоматически: сумма в пределах лимита 5 000 000 ₽. Деньги ориентировочно 26.10.2026, до нужной даты 15.11.2026 остаётся 20 дней."
+        "explanation": "Решение принимается автоматически, сумма в пределах лимита 5 000 000 ₽: деньги ориентировочно 26.10.2026, до нужной даты 15.11.2026 остаётся 20 дней."
       },
       "explanations": [
-        { "code": "product_about", "text": "Возобновляемый лимит для регулярных закупок и расширения. Транши выбираются по мере необходимости." },
-        { "code": "no_collateral", "text": "Без залога." },
-        { "code": "auto_decision", "text": "Решение принимается автоматически: сумма в пределах лимита автоодобрения 5 000 000 ₽." },
-        { "code": "cheapest", "text": "Самая низкая переплата среди подходящих вариантов." },
-        { "code": "data_prefilled", "text": "Выручка, налоги и реквизиты подгружаются из кабинета автоматически, вводить их не нужно." }
+        {
+          "code": "product_about",
+          "text": "Возобновляемый лимит для регулярных закупок и расширения. Транши выбираются по мере необходимости."
+        },
+        {
+          "code": "no_collateral",
+          "text": "Без залога."
+        },
+        {
+          "code": "auto_decision",
+          "text": "Решение принимается автоматически: сумма в пределах лимита автоодобрения 5 000 000 ₽."
+        },
+        {
+          "code": "data_prefilled",
+          "text": "Выручка, налоги и реквизиты подгружаются из кабинета автоматически, вводить их не нужно."
+        },
+        {
+          "code": "cheapest",
+          "text": "Самая низкая переплата среди подходящих вариантов."
+        }
       ],
       "limitations": [
-        { "code": "rate_depends_on_risk", "text": "Ставка от 18,5 до 21,5 % годовых: точную ставку банк назначает после оценки риска." }
+        {
+          "code": "rate_depends_on_risk",
+          "text": "Ставка от 18,5 % до 21,5 % годовых: точную ставку банк назначает после оценки риска."
+        }
       ],
       "requirements": [
-        { "code": "credit_history_consent", "text": "Согласие на запрос кредитной истории: без него заявку нельзя подать." }
+        {
+          "code": "credit_history_consent",
+          "text": "Согласие на запрос кредитной истории: без него заявку нельзя подать."
+        }
       ],
-      "applyWith": { "companyId": "01a15975-ea5f-7a4f-863b-9035b3b8b2ca", "productCode": "credit-line", "amount": 1500000, "termMonths": 12, "purpose": "WorkingCapital", "needByDate": "2026-11-15" }
+      "applyWith": {
+        "companyId": "01a1681b-af21-7f3c-9090-2fedb48bbc20",
+        "productCode": "credit-line",
+        "amount": 1500000,
+        "termMonths": 12,
+        "purpose": "WorkingCapital",
+        "needByDate": "2026-11-15"
+      }
     },
     {
       "productCode": "working-capital",
@@ -128,14 +171,54 @@ sequenceDiagram
       "amount": 1500000,
       "termMonths": 12,
       "termSuggested": false,
-      "termRange": { "min": 3, "max": 24 },
-      "cost": { "interestRate": 19.5, "maxInterestRate": 22.5, "monthlyPayment": 138593.06, "maxMonthlyPayment": 140752.78, "totalPayment": 1663116.74, "totalInterest": 163116.74, "maxTotalInterest": 189033.30 },
-      "affordability": { "monthlyProfit": 600000, "currentDebtPayments": 150000, "debtLoad": 0.48, "level": "Moderate", "profitBasis": "NetProfit", "explanation": "…" },
-      "funding": { "decisionPath": "Auto", "businessDays": 1, "expectedDate": "2026-10-26", "inTime": true, "explanation": "…" },
-      "explanations": [ "…" ],
-      "limitations": [ { "code": "rate_depends_on_risk", "text": "Ставка от 19,5 до 22,5 % годовых: точную ставку банк назначает после оценки риска." } ],
-      "requirements": [ "…" ],
-      "applyWith": { "companyId": "01a15975-ea5f-7a4f-863b-9035b3b8b2ca", "productCode": "working-capital", "amount": 1500000, "termMonths": 12, "purpose": "WorkingCapital", "needByDate": "2026-11-15" }
+      "termRange": {
+        "min": 3,
+        "max": 24
+      },
+      "cost": {
+        "interestRate": 19.5,
+        "maxInterestRate": 22.5,
+        "monthlyPayment": 138593.06,
+        "maxMonthlyPayment": 140752.78,
+        "totalPayment": 1663116.74,
+        "totalInterest": 163116.74,
+        "maxTotalInterest": 189033.3
+      },
+      "affordability": {
+        "monthlyProfit": 600000.0,
+        "currentDebtPayments": 150000.0,
+        "debtLoad": 0.48,
+        "level": "Moderate",
+        "profitBasis": "NetProfit",
+        "explanation": "…"
+      },
+      "funding": {
+        "decisionPath": "Auto",
+        "businessDays": 1,
+        "expectedDate": "2026-10-26",
+        "inTime": true,
+        "explanation": "…"
+      },
+      "explanations": [
+        "…"
+      ],
+      "limitations": [
+        {
+          "code": "rate_depends_on_risk",
+          "text": "Ставка от 19,5 % до 22,5 % годовых: точную ставку банк назначает после оценки риска."
+        }
+      ],
+      "requirements": [
+        "…"
+      ],
+      "applyWith": {
+        "companyId": "01a1681b-af21-7f3c-9090-2fedb48bbc20",
+        "productCode": "working-capital",
+        "amount": 1500000,
+        "termMonths": 12,
+        "purpose": "WorkingCapital",
+        "needByDate": "2026-11-15"
+      }
     }
   ],
   "unsuitable": [
@@ -143,15 +226,18 @@ sequenceDiagram
       "productCode": "investment",
       "productName": "Инвестиционный кредит",
       "reasons": [
-        { "code": "purpose_not_allowed", "text": "Цель «Пополнение оборотных средств» недоступна. Доступные цели: «Покупка оборудования или транспорта», «Расширение бизнеса», «Рефинансирование кредитов»." }
+        {
+          "code": "purpose_not_allowed",
+          "text": "Цель «Пополнение оборотных средств» недоступна. Доступные цели: «Покупка оборудования или транспорта», «Расширение бизнеса», «Рефинансирование кредитов»."
+        }
       ]
     }
   ]
 }
 ```
 
-Полные ответы по всем демо-клиентам (четыре продукта для «Ромашки», ручное рассмотрение и залог для «Вектора»,
-«вариантов нет» для ИП Петровой) снимаются с запущенного стенда запросами из `docs/requests.http`.
+Примеры в этом документе сняты с запущенного стенда (seed, расчёт 23.10.2026) и сокращены: `"…"` обозначает
+опущенные поля. Полные ответы для любого демо-клиента можно получить запросами из `docs/requests.http`.
 
 ### Поля ответа
 
@@ -184,7 +270,7 @@ sequenceDiagram
 | `funding.businessDays`, `funding.expectedDate` | ориентир: через сколько рабочих дней после подачи деньги обычно на счёте и какая это дата |
 | `funding.inTime` | `expectedDate` не позже `needByDate` |
 | `funding.explanation` | фраза для клиента: почему такой срок и успеваем ли |
-| `explanations[]` | почему вариант подходит и что в нём важно: `product_about`, `no_collateral`, `auto_decision`, `term_suggested`, `cheapest`, `data_prefilled` |
+| `explanations[]` | почему вариант подходит и что в нём важно: `product_about`, `no_collateral`, `auto_decision`, `term_suggested`, `data_prefilled`, `cheapest` (у варианта с минимальной переплатой) |
 | `limitations[]` | что может изменить условия или срок: `rate_depends_on_risk`, `manual_review_amount`, `collateral_required`, `amount_may_be_reduced` (сумма выше 25 % годовой выручки), `high_debt_load`, `deadline_missed` |
 | `requirements[]` | что нужно для оформления: `credit_history_consent`, `financials_required` (расходы и прибыль за 12 мес. для сумм выше 3 000 000 ₽ и продуктов «Кредитная линия», «Инвестиционный», если их нет в карточке), `collateral_documents` |
 | `applyWith` | готовое тело для `POST /api/applications`: продукт, сумма, срок, цель и `needByDate`; интерфейс отправляет его без изменений |
@@ -202,25 +288,88 @@ sequenceDiagram
 
 ### Вариантов нет
 
-ИП Петрова (`client_new`, бизнесу 4 месяца), 500 000 ₽ на оборотные средства:
+ИП Петрова (`client_new`, бизнесу 4 месяца), 500 000 ₽ на оборотные средства. `summary` собирает одинаковые причины
+разных продуктов в одну фразу:
 
 ```json
 {
-  "calculatedAt": "2026-10-23T14:00:00+00:00",
-  "company": { "id": "…", "name": "ИП Петрова Елена Викторовна", "inn": "772812345678", "businessAgeMonths": 4 },
-  "request": { "amount": 500000, "purpose": "WorkingCapital", "purposeTitle": "Пополнение оборотных средств", "needByDate": "2026-12-01", "daysUntilNeeded": 39, "termMonths": null },
-  "summary": "Подходящих продуктов нет. Возраст бизнеса 4 мес., для продуктов требуется не менее 6 мес. («Экспресс-кредит», «Овердрафт»), 12 мес. («Оборотный кредит», «Кредитная линия») или 24 мес. («Инвестиционный кредит»).",
-  "disclaimer": "…",
+  "calculatedAt": "2026-10-23T21:00:22.9212138+00:00",
+  "company": {
+    "id": "01a1681b-af48-7187-a0ec-24fc243564e5",
+    "name": "ИП Петрова Елена Викторовна",
+    "inn": "772812345678",
+    "businessAgeMonths": 4
+  },
+  "request": {
+    "amount": 500000,
+    "purpose": "WorkingCapital",
+    "purposeTitle": "Пополнение оборотных средств",
+    "needByDate": "2026-12-01",
+    "daysUntilNeeded": 39,
+    "termMonths": null
+  },
+  "summary": "Подходящих продуктов нет. Возраст бизнеса 4 мес., для продукта требуется не менее 12 мес. Продукты: «Оборотный кредит», «Кредитная линия». Возраст бизнеса 4 мес., для продукта требуется не менее 6 мес. Продукты: «Экспресс-кредит», «Овердрафт». Цель «Пополнение оборотных средств» недоступна. Доступные цели: «Покупка оборудования или транспорта», «Расширение бизнеса», «Рефинансирование кредитов». Продукт: «Инвестиционный кредит». Минимальная сумма продукта 1 000 000 ₽. Продукт: «Инвестиционный кредит». Возраст бизнеса 4 мес., для продукта требуется не менее 24 мес. Продукт: «Инвестиционный кредит».",
+  "disclaimer": "Предварительный расчёт по базовым ставкам продуктов и данным компании из кабинета. Точные условия банк назначает после проверки заявки: ставка зависит от оценки риска, сумма может быть снижена. Заявка не создана.",
   "options": [],
   "unsuitable": [
-    { "productCode": "working-capital", "productName": "Оборотный кредит", "reasons": [ { "code": "business_too_young", "text": "Возраст бизнеса 4 мес., для продукта требуется не менее 12 мес." } ] },
-    { "productCode": "express", "productName": "Экспресс-кредит", "reasons": [ { "code": "business_too_young", "text": "Возраст бизнеса 4 мес., для продукта требуется не менее 6 мес." } ] },
-    { "productCode": "overdraft", "productName": "Овердрафт", "reasons": [ { "code": "business_too_young", "text": "Возраст бизнеса 4 мес., для продукта требуется не менее 6 мес." } ] },
-    { "productCode": "credit-line", "productName": "Кредитная линия", "reasons": [ { "code": "business_too_young", "text": "Возраст бизнеса 4 мес., для продукта требуется не менее 12 мес." } ] },
-    { "productCode": "investment", "productName": "Инвестиционный кредит", "reasons": [
-      { "code": "purpose_not_allowed", "text": "Цель «Пополнение оборотных средств» недоступна. Доступные цели: «Покупка оборудования или транспорта», «Расширение бизнеса», «Рефинансирование кредитов»." },
-      { "code": "amount_below_min", "text": "Минимальная сумма продукта 1 000 000 ₽." },
-      { "code": "business_too_young", "text": "Возраст бизнеса 4 мес., для продукта требуется не менее 24 мес." } ] }
+    {
+      "productCode": "working-capital",
+      "productName": "Оборотный кредит",
+      "reasons": [
+        {
+          "code": "business_too_young",
+          "text": "Возраст бизнеса 4 мес., для продукта требуется не менее 12 мес."
+        }
+      ]
+    },
+    {
+      "productCode": "express",
+      "productName": "Экспресс-кредит",
+      "reasons": [
+        {
+          "code": "business_too_young",
+          "text": "Возраст бизнеса 4 мес., для продукта требуется не менее 6 мес."
+        }
+      ]
+    },
+    {
+      "productCode": "overdraft",
+      "productName": "Овердрафт",
+      "reasons": [
+        {
+          "code": "business_too_young",
+          "text": "Возраст бизнеса 4 мес., для продукта требуется не менее 6 мес."
+        }
+      ]
+    },
+    {
+      "productCode": "credit-line",
+      "productName": "Кредитная линия",
+      "reasons": [
+        {
+          "code": "business_too_young",
+          "text": "Возраст бизнеса 4 мес., для продукта требуется не менее 12 мес."
+        }
+      ]
+    },
+    {
+      "productCode": "investment",
+      "productName": "Инвестиционный кредит",
+      "reasons": [
+        {
+          "code": "purpose_not_allowed",
+          "text": "Цель «Пополнение оборотных средств» недоступна. Доступные цели: «Покупка оборудования или транспорта», «Расширение бизнеса», «Рефинансирование кредитов»."
+        },
+        {
+          "code": "amount_below_min",
+          "text": "Минимальная сумма продукта 1 000 000 ₽."
+        },
+        {
+          "code": "business_too_young",
+          "text": "Возраст бизнеса 4 мес., для продукта требуется не менее 24 мес."
+        }
+      ]
+    }
   ]
 }
 ```
@@ -235,36 +384,155 @@ sequenceDiagram
 {
   "options": [
     {
-      "productCode": "credit-line", "isRecommended": true, "termMonths": 36, "termSuggested": true, "termRange": { "min": 6, "max": 36 },
-      "cost": { "interestRate": 18.5, "maxInterestRate": 21.5, "monthlyPayment": 182018.57, "maxMonthlyPayment": 189661.37, "totalPayment": 6552668.58, "totalInterest": 1552668.58, "maxTotalInterest": 1827809.25 },
-      "affordability": { "monthlyProfit": 1333333.33, "currentDebtPayments": 1200000, "debtLoad": 1.04, "level": "High", "profitBasis": "NetProfit", "explanation": "…" },
-      "funding": { "decisionPath": "Auto", "businessDays": 1, "expectedDate": "2026-10-26", "inTime": true, "explanation": "…" },
+      "productCode": "credit-line",
+      "isRecommended": true,
+      "termMonths": 36,
+      "termSuggested": true,
+      "termRange": {
+        "min": 6,
+        "max": 36
+      },
+      "cost": {
+        "interestRate": 18.5,
+        "maxInterestRate": 21.5,
+        "monthlyPayment": 182018.57,
+        "maxMonthlyPayment": 189661.37,
+        "totalPayment": 6552668.58,
+        "totalInterest": 1552668.58,
+        "maxTotalInterest": 1827809.25
+      },
+      "affordability": {
+        "monthlyProfit": 1333333.33,
+        "currentDebtPayments": 1200000.0,
+        "debtLoad": 1.04,
+        "level": "High",
+        "profitBasis": "NetProfit",
+        "explanation": "…"
+      },
+      "funding": {
+        "decisionPath": "Auto",
+        "businessDays": 1,
+        "expectedDate": "2026-10-26",
+        "inTime": true,
+        "explanation": "Решение принимается автоматически, сумма в пределах лимита 5 000 000 ₽: деньги ориентировочно 26.10.2026, до нужной даты 02.11.2026 остаётся 7 дней."
+      },
       "limitations": [
-        { "code": "rate_depends_on_risk", "text": "…" },
-        { "code": "high_debt_load", "text": "Платёж вместе с текущими обязательствами составит 104 % месячной прибыли: возможен отказ или снижение суммы." }
+        {
+          "code": "rate_depends_on_risk",
+          "text": "…"
+        },
+        {
+          "code": "high_debt_load",
+          "text": "Платёж вместе с текущими обязательствами составит 104 % месячной прибыли: возможен отказ или снижение суммы."
+        }
       ],
-      "requirements": [ { "code": "credit_history_consent", "text": "…" } ],
+      "requirements": [
+        {
+          "code": "credit_history_consent",
+          "text": "…"
+        }
+      ],
       "…": "…"
     },
     {
-      "productCode": "investment", "isRecommended": false, "termMonths": 84, "termSuggested": true, "termRange": { "min": 12, "max": 84 },
-      "cost": { "interestRate": 17.5, "maxInterestRate": 20.5, "monthlyPayment": 103628.97, "maxMonthlyPayment": 112541.21, "totalPayment": 8704833.32, "totalInterest": 3704833.32, "maxTotalInterest": 4453461.34 },
-      "funding": { "decisionPath": "ManualReview", "businessDays": 10, "expectedDate": "2026-11-06", "inTime": false, "explanation": "Нужен залог, решение принимает менеджер: деньги ориентировочно 06.11.2026, это позже нужной даты 02.11.2026." },
+      "productCode": "investment",
+      "isRecommended": false,
+      "termMonths": 84,
+      "termSuggested": true,
+      "termRange": {
+        "min": 12,
+        "max": 84
+      },
+      "cost": {
+        "interestRate": 17.5,
+        "maxInterestRate": 20.5,
+        "monthlyPayment": 103628.97,
+        "maxMonthlyPayment": 112541.21,
+        "totalPayment": 8704833.32,
+        "totalInterest": 3704833.32,
+        "maxTotalInterest": 4453461.34
+      },
+      "affordability": {
+        "monthlyProfit": 1333333.33,
+        "currentDebtPayments": 1200000.0,
+        "debtLoad": 0.98,
+        "level": "High",
+        "profitBasis": "NetProfit",
+        "explanation": "…"
+      },
+      "funding": {
+        "decisionPath": "ManualReview",
+        "businessDays": 10,
+        "expectedDate": "2026-11-06",
+        "inTime": false,
+        "explanation": "Нужен залог, решение принимает менеджер: деньги ориентировочно 06.11.2026, это позже нужной даты 02.11.2026."
+      },
       "limitations": [
-        { "code": "rate_depends_on_risk", "text": "…" },
-        { "code": "manual_review_amount", "text": "Сумма выше лимита автоодобрения 3 000 000 ₽: решение принимает кредитный менеджер." },
-        { "code": "collateral_required", "text": "Нужен залог: его оформление и оценка занимают до 10 рабочих дней." },
-        { "code": "high_debt_load", "text": "…" },
-        { "code": "deadline_missed", "text": "Ориентир получения 06.11.2026 позже нужной даты 02.11.2026." }
+        {
+          "code": "rate_depends_on_risk",
+          "text": "…"
+        },
+        {
+          "code": "manual_review_amount",
+          "text": "Сумма выше лимита автоодобрения 3 000 000 ₽: решение принимает кредитный менеджер."
+        },
+        {
+          "code": "collateral_required",
+          "text": "Нужен залог: его оформление и оценка занимают до 10 рабочих дней."
+        },
+        {
+          "code": "high_debt_load",
+          "text": "…"
+        },
+        {
+          "code": "deadline_missed",
+          "text": "Ориентир получения 06.11.2026 позже нужной даты 02.11.2026."
+        }
       ],
-      "requirements": [ { "code": "credit_history_consent", "text": "…" }, { "code": "collateral_documents", "text": "Документы на предмет залога." } ],
+      "requirements": [
+        {
+          "code": "credit_history_consent",
+          "text": "…"
+        },
+        {
+          "code": "collateral_documents",
+          "text": "Документы на предмет залога."
+        }
+      ],
       "…": "…"
     }
   ],
   "unsuitable": [
-    { "productCode": "working-capital", "productName": "Оборотный кредит", "reasons": [ { "code": "purpose_not_allowed", "text": "…" } ] },
-    { "productCode": "express", "productName": "Экспресс-кредит", "reasons": [ { "code": "amount_above_max", "text": "Максимальная сумма продукта 3 000 000 ₽." } ] },
-    { "productCode": "overdraft", "productName": "Овердрафт", "reasons": [ { "code": "purpose_not_allowed", "text": "…" } ] }
+    {
+      "productCode": "working-capital",
+      "productName": "Оборотный кредит",
+      "reasons": [
+        {
+          "code": "purpose_not_allowed",
+          "text": "…"
+        }
+      ]
+    },
+    {
+      "productCode": "express",
+      "productName": "Экспресс-кредит",
+      "reasons": [
+        {
+          "code": "amount_above_max",
+          "text": "Максимальная сумма продукта 3 000 000 ₽."
+        }
+      ]
+    },
+    {
+      "productCode": "overdraft",
+      "productName": "Овердрафт",
+      "reasons": [
+        {
+          "code": "purpose_not_allowed",
+          "text": "…"
+        }
+      ]
+    }
   ]
 }
 ```
@@ -415,3 +683,15 @@ export interface FinancingPreview {
 ```
 
 В `Application` и `ApplicationSummary` добавляется `needByDate: string | null`. Остальные типы не меняются.
+
+## Передача на интеграцию
+
+| Что | Где |
+|---|---|
+| Код | ветка `main`, коммит с сообщением `feat: financing preview and needByDate …`; хеш в сообщении о передаче |
+| Реализация | `src/AlfaCredit.Core/Features/Financing/` (расчёт `FinancingAdvisor`, сервис, параметры), `src/AlfaCredit.Api/Controllers/FinancingController.cs`, `src/AlfaCredit.Api/Contracts/Financing/`, поле `NeedByDate` в `CreditApplication`, миграция `AddApplicationNeedByDate` |
+| Проверки | юнит-тесты `tests/AlfaCredit.UnitTests/Financing/` (контрольные числа этого документа, подбор срока, пороги нагрузки, ориентиры дат, сортировка, права, валидация даты) и `CreditApplicationTests` (окно `needByDate`); интеграционные `FinancingEndpointsTests` (preview → `applyWith` → заявка с датой, старый формат без даты, 400/401/403, подбор без срока, «вариантов нет»); CI запускает оба набора на PostgreSQL в контейнере |
+| Локальный стенд | миграция применена к базе с существующими заявками (старые строки получили `NULL`), preview по всем пяти демо-клиентам, заявка из `applyWith`, два перезапуска API: `needByDate` и статус сохраняются, путь обработка → решение → предложение → договор → подписание → выдача пройден на заявке с датой; существующие сценарии завершения, параллельных действий и демо-менеджера прогнаны повторно |
+| Конфигурация | новая секция `FinancingPreview` в `appsettings.json` (таблица выше); значения по умолчанию, в `docker-compose.yml` и `.env` ничего менять не нужно; запрос к сервису скоринга и его контракт не изменились |
+| Фронтенд | `src/types/api.ts`: типы из раздела выше, `needByDate` в `CreateApplicationRequest`, `Application`, `ApplicationSummary`; `httpCreditApi.ts`: метод `previewFinancing(body)` → `POST /api/financing/preview` |
+| ML | подтвердить три пункта раздела «Согласовать с ML»; при изменении порогов нагрузки поменять `FinancingPreview__ComfortableDebtLoad` и `FinancingPreview__HighDebtLoad` |

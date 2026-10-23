@@ -179,6 +179,40 @@
           }
         },
         {
+          "name": "Financing preview",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/financing/preview",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"amount\": 1500000,\n  \"purpose\": \"WorkingCapital\",\n  \"needByDate\": \"2026-11-15\",\n  \"termMonths\": 12\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('has recommended option', () => pm.expect(pm.response.json().options[0].isRecommended).to.eql(true));",
+                  "pm.test('no application created', () => pm.expect(pm.response.json().disclaimer).to.include('Заявка не создана'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Create application",
           "request": {
             "method": "POST",
@@ -195,7 +229,7 @@
             "url": "{{baseUrl}}/api/applications",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"productCode\": \"working-capital\",\n  \"amount\": 1500000,\n  \"termMonths\": 12,\n  \"purpose\": \"WorkingCapital\",\n  \"purposeDescription\": \"Закупка товара к сезону\"\n}"
+              "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"productCode\": \"working-capital\",\n  \"amount\": 1500000,\n  \"termMonths\": 12,\n  \"purpose\": \"WorkingCapital\",\n  \"purposeDescription\": \"Закупка товара к сезону\",\n  \"needByDate\": \"2026-11-15\"\n}"
             }
           },
           "event": [
