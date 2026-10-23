@@ -230,7 +230,9 @@ public sealed class CreditApplication
     {
         ArgumentNullException.ThrowIfNull(decision);
         var actor = decision.DecidedBy == DecisionActor.Manager ? ActorType.Manager : ActorType.System;
-        var who = decision.DecidedBy == DecisionActor.Manager ? "Решение менеджера" : "Автоматическое решение";
+        var who = decision.DecidedBy == DecisionActor.Manager
+            ? (decision.IsSimulated ? "Смоделированный ответ менеджера (демо-режим)" : "Решение менеджера")
+            : "Автоматическое решение";
 
         _decisions.Add(decision);
 

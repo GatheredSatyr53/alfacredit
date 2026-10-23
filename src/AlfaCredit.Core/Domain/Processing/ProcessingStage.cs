@@ -17,6 +17,9 @@ public enum ProcessingStage
 
     /// <summary>Выдача средств по подписанному договору.</summary>
     Disburse = 5,
+
+    /// <summary>Демо-режим: смоделированный ответ менеджера по заявке в ручном рассмотрении.</summary>
+    ManagerDecision = 6,
 }
 
 public enum ProcessingJobStatus

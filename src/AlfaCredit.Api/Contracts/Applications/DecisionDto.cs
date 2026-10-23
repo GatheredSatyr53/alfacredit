@@ -8,6 +8,7 @@ namespace AlfaCredit.Api.Contracts.Applications;
 /// <param name="Type">Approved, ApprovedWithConditions, Rejected или ManualReview.</param>
 /// <param name="IsFinal">Окончательное решение; для ManualReview false.</param>
 /// <param name="DecidedBy">Auto или Manager.</param>
+/// <param name="IsSimulated">Ответ менеджера смоделирован демо-режимом (DemoManager); настоящий сотрудник заявку не рассматривал.</param>
 /// <param name="RecommendedType">Рекомендация автоматики, если решение передано менеджеру.</param>
 /// <param name="ApprovedAmount">Одобренная сумма, ₽.</param>
 /// <param name="ApprovedTermMonths">Одобренный срок, мес.</param>
@@ -20,6 +21,7 @@ public sealed record DecisionDto(
     DecisionType Type,
     bool IsFinal,
     DecisionActor DecidedBy,
+    bool IsSimulated,
     DecisionType? RecommendedType,
     decimal? ApprovedAmount,
     int? ApprovedTermMonths,

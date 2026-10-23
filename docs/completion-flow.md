@@ -31,7 +31,8 @@ sequenceDiagram
 
 | Статус | `progressStep` | Терминальный | `availableActions` клиента | Что показать |
 |---|---|---|---|---|
-| `Approved`, `ApprovedWithConditions` | 4 | нет | `acceptOffer`, `declineOffer` | предложение (`offer`), кнопки принять/отклонить |
+| `ManualReview` | 3 | нет | `cancel` | в демо-режиме через несколько секунд приходит смоделированный ответ менеджера (`decision.isSimulated` = `true`): одобрение с предложением или отказ |
+| `Approved`, `ApprovedWithConditions` | 4 | нет | `acceptOffer`, `declineOffer` | предложение (`offer`), кнопки принять/отклонить; после одобрения менеджером путь тот же |
 | `ContractSigning` | 5 | нет | `signContract`, `cancel` | договор (`contract`), график, ссылка на печатную форму, запрос кода и ввод кода |
 | `Signed` | 5 | нет | нет | «Договор подписан, выполняется выдача», обычно несколько секунд |
 | `Disbursed` | 6 | да | нет | реквизиты выдачи (`disbursement`), график платежей |

@@ -92,6 +92,7 @@ public sealed class DisbursementPipelineTests
             _unitOfWork,
             _clock,
             Options.Create(new ProcessingOptions()),
+            Options.Create(new DemoManagerOptions { Enabled = false }),
             NullLogger<ProcessingFailureHandler>.Instance);
 
         await handler.HandleAsync(job.Id, new DisbursementFailedException("core banking down"), CancellationToken.None);
@@ -137,6 +138,8 @@ public sealed class DisbursementPipelineTests
             _clock,
             Options.Create(new ProcessingOptions { StageDelaySeconds = 0 }),
             Options.Create(policyOptions),
+            Options.Create(new DemoManagerOptions { Enabled = false }),
+            new FixedDemoManagerChooser(true),
             NullLogger<ApplicationPipeline>.Instance);
     }
 }

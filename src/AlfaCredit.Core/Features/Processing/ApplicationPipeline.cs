@@ -39,6 +39,8 @@ public sealed class ApplicationPipeline(
     TimeProvider clock,
     IOptions<ProcessingOptions> processingOptions,
     IOptions<DecisionPolicyOptions> policyOptions,
+    IOptions<DemoManagerOptions> demoManager,
+    IDemoManagerChooser demoChooser,
     ILogger<ApplicationPipeline> logger)
 {
     private const int SourceAttempts = 3;
@@ -66,6 +68,7 @@ public sealed class ApplicationPipeline(
             ProcessingStage.Score => await ScoreAsync(application, cancellationToken),
             ProcessingStage.Decide => await DecideAsync(application, cancellationToken),
             ProcessingStage.Disburse => await DisburseAsync(application, cancellationToken),
+            ProcessingStage.ManagerDecision => await ManagerDecisionAsync(application, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(job), job.Stage, "Unknown processing stage."),
         };
 
@@ -74,6 +77,11 @@ public sealed class ApplicationPipeline(
         if (next is { } nextStage)
         {
             jobs.Add(ProcessingJob.Create(application.Id, nextStage, now, processingOptions.Value.StageDelay, processingOptions.Value.MaxAttempts));
+        }
+        else if (application.Status == ApplicationStatus.ManualReview && demoManager.Value.Enabled && job.Stage != ProcessingStage.ManagerDecision)
+        {
+            // Демо-режим: ответ менеджера моделируется отдельным заданием с задержкой, чтобы ручное рассмотрение было видно в кабинете
+            jobs.Add(ProcessingJob.Create(application.Id, ProcessingStage.ManagerDecision, now, demoManager.Value.Delay, processingOptions.Value.MaxAttempts));
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -409,6 +417,43 @@ public sealed class ApplicationPipeline(
             $"{Money.FormatRub(disbursement.Amount)} зачислены на расчётный счёт {disbursement.Account}, платёжное поручение {disbursement.PaymentOrderNumber}. Первый платёж {Money.FormatRub(contract.MonthlyPayment)} через месяц.");
         await feed.NotifyManagersAsync(application, FeedItemType.Disbursed, $"Выдача по договору {contract.Number} завершена",
             $"{application.Company.Name}: {Money.FormatRub(disbursement.Amount)}, платёжное поручение {disbursement.PaymentOrderNumber}.", cancellationToken);
+        return null;
+    }
+
+    /// <summary>
+    /// Демо-режим: смоделированный ответ менеджера. Исход выбирается случайно по настроенной вероятности, решение сохраняется
+    /// с пометкой IsSimulated и попадает в историю. Если заявку уже отменили или решили, задание ничего не делает.
+    /// </summary>
+    private async Task<ProcessingStage?> ManagerDecisionAsync(CreditApplication application, CancellationToken cancellationToken)
+    {
+        if (!demoManager.Value.Enabled || application.Status != ApplicationStatus.ManualReview)
+        {
+            logger.LogInformation("Application {Number}: simulated manager decision skipped (demo mode {Enabled}, status {Status})", application.Number, demoManager.Value.Enabled, application.Status);
+            return null;
+        }
+
+        var now = clock.GetUtcNow();
+        var decision = demoChooser.Approves() ? DemoManagerPolicy.Approve(application, now) : DemoManagerPolicy.Reject(application, now);
+        var offer = application.ApplyDecision(decision, policyOptions.Value.OfferValidity, now);
+        logger.LogInformation("Application {Number}: simulated manager decision {Type} (demo mode)", application.Number, decision.Type);
+
+        var number = application.Number;
+        switch (decision.Type)
+        {
+            case DecisionType.Approved or DecisionType.ApprovedWithConditions when offer is not null:
+                var conditions = string.IsNullOrWhiteSpace(decision.Conditions) ? string.Empty : $" Условия: {decision.Conditions}.";
+                feed.NotifyCompany(application, FeedItemType.OfferReady, $"Заявка {number} одобрена менеджером",
+                    $"Банк готов выдать {Money.FormatRub(offer.Amount)} на {offer.TermMonths} мес. под {offer.InterestRate:0.##} % годовых, платёж {Money.FormatRub(offer.MonthlyPayment)} в месяц.{conditions} Предложение действует до {offer.ExpiresAt:dd.MM.yyyy}. Ответ менеджера смоделирован (демо-режим).");
+                break;
+
+            case DecisionType.Rejected:
+                feed.NotifyCompany(application, FeedItemType.Rejected, $"По заявке {number} менеджер принял отрицательное решение",
+                    $"{decision.Reasons[0].ClientExplanation} Ответ менеджера смоделирован (демо-режим).");
+                break;
+        }
+
+        await feed.NotifyManagersAsync(application, FeedItemType.StatusChanged, $"Демо-менеджер: {decision.Type} по заявке {number}",
+            $"{application.Company.Name}, {Money.FormatRub(application.Amount)} на {application.TermMonths} мес. Ответ смоделирован демо-режимом (DemoManager).", cancellationToken);
         return null;
     }
 
