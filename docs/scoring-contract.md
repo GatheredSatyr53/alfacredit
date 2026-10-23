@@ -189,7 +189,7 @@ backend проверяет отдельно, до применения грей�
 | `score` | int 0..100 | обязательно |
 | `risk_grade` | `A`..`E` | обязательно |
 | `probability_of_default` | float 0..1 или null | желательно, показывается менеджеру |
-| `factors` | массив | 3..7 главных факторов по убыванию модуля `impact`; `impact` в баллах со знаком, `value` строка для карточки, `client_explanation` фраза для клиента простым языком; `title` и `client_explanation` на русском |
+| `factors` | массив | 3..7 главных факторов по убыванию модуля `impact`; `impact` в баллах со знаком, `value` строка для карточки, `client_explanation` фраза для клиента простым языком; `title` и `client_explanation` на русском. `code` в snake_case без префикса `factor_` (например `debt_load`): в причинах решения backend сам добавляет `factor_`, а уже имеющийся префикс не удваивает |
 | `warnings` | массив строк | предупреждения модели: чем заменены отсутствующие входы (`net_profit_missing`), особенности расчёта |
 | `missing_data` | массив строк | каких входов не хватало: пути полей запроса, например `checks.credit_bureau`, `company.financials.net_profit_rub`. Backend дополняет список тем, что сам отправил как `null` |
 | `model_version` | string | сохраняется в заявке для воспроизводимости |

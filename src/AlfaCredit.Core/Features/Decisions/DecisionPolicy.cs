@@ -50,7 +50,7 @@ public sealed class DecisionPolicy(DecisionPolicyOptions options)
         {
             new("risk_grade", $"Грейд риска {scoring.Grade}, {scoring.Score} баллов", GradeExplanation(scoring.Grade)),
         };
-        baseReasons.AddRange(scoring.Factors.Take(3).Select(f => new DecisionReason($"factor_{f.Code}", f.Title, f.ClientExplanation)));
+        baseReasons.AddRange(scoring.Factors.Take(3).Select(f => new DecisionReason(FactorReasonCode(f.Code), f.Title, f.ClientExplanation)));
 
         switch (scoring.Grade)
         {
@@ -143,6 +143,10 @@ public sealed class DecisionPolicy(DecisionPolicyOptions options)
             yield return new DecisionReason("enforcement_debt", $"Исполнительные производства на {Money.FormatRub(fssp.OpenAmountRub)}", $"Сумма открытых исполнительных производств превышает {Money.FormatRub(options.FsspHardStopRub)}.");
         }
     }
+
+    /// <summary>Код причины по фактору скоринга: factor_debt_load. Коды внешнего сервиса уже с префиксом не удваиваются.</summary>
+    public static string FactorReasonCode(string factorCode) =>
+        factorCode.StartsWith("factor_", StringComparison.Ordinal) ? factorCode : $"factor_{factorCode}";
 
     private static DecisionOutcome ManualReview(DecisionType recommended, DecisionReason reason, IEnumerable<DecisionReason>? more = null) =>
         new(DecisionType.ManualReview, recommended, null, null, null, null, null, [reason, .. more ?? []]);
