@@ -117,6 +117,32 @@ public sealed class DecisionPolicyTests
         outcome.Reasons[0].Code.ShouldBe("collateral_required");
     }
 
+    [Fact]
+    public void Factor_reason_codes_keep_a_single_prefix()
+    {
+        var application = Application(1_000_000, 12);
+        var scoring = ScoringResult.Create(
+            application.Id,
+            Guid.CreateVersion7(),
+            new ScoringOutcome(
+                78,
+                RiskGrade.B,
+                null,
+                [new ScoringFactor("factor_debt_load", "Кредитная нагрузка", -8, "0.48", "Платежи занимают половину прибыли."), new ScoringFactor("business_age", "Возраст бизнеса", 10, "7 лет", "Компания работает давно.")],
+                [],
+                [],
+                "rules-0.2",
+                ScoringSource.External),
+            durationMs: 0,
+            TestData.Now);
+
+        var outcome = _policy.Decide(application, CleanChecks(), scoring);
+
+        outcome.Reasons.Select(r => r.Code).ShouldBe(["risk_grade", "factor_debt_load", "factor_business_age"]);
+        DecisionPolicy.FactorReasonCode("factor_x").ShouldBe("factor_x");
+        DecisionPolicy.FactorReasonCode("x").ShouldBe("factor_x");
+    }
+
     private static CreditApplication Application(decimal amount, int termMonths, decimal revenue = 48_000_000) =>
         CreditApplication.Create(TestData.Company(annualRevenue: revenue), TestData.Product(), Guid.NewGuid(), amount, termMonths, LoanPurpose.WorkingCapital, null, TestData.Now);
 

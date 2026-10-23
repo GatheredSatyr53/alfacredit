@@ -63,13 +63,14 @@ public sealed class RuleBasedScoringService : IScoringService
         }
 
         var totalPayments = financials.MonthlyDebtPaymentsRub + request.Application.EstimatedMonthlyPaymentRub;
-        var load = monthlyProfit <= 0 ? 9.99m : totalPayments / monthlyProfit;
+        var noProfit = monthlyProfit <= 0;
+        var load = noProfit ? 9.99m : totalPayments / monthlyProfit;
         var loadImpact = load switch { < 0.3m => 10, < 0.5m => 0, < 0.7m => -10, _ => -25 };
         factors.Add(new ScoringFactor(
             "debt_load",
             "Долговая нагрузка",
             loadImpact,
-            load >= 9.99m ? "прибыль отсутствует" : $"{load:0.00}",
+            noProfit ? "прибыль отсутствует" : $"{load:0.00}",
             loadImpact > 0 ? "Платежи по кредитам занимают небольшую часть прибыли."
             : loadImpact == 0 ? "Платежи по кредитам занимают около половины месячной прибыли."
             : "Платежи по кредитам с учётом нового займа занимают слишком большую часть прибыли."));
