@@ -2003,6 +2003,10 @@
           "decidedBy": {
             "$ref": "#/components/schemas/DecisionActor"
           },
+          "isSimulated": {
+            "type": "boolean",
+            "description": "Ответ менеджера смоделирован демо-режимом (DemoManager); настоящий сотрудник заявку не рассматривал."
+          },
           "recommendedType": {
             "$ref": "#/components/schemas/DecisionType"
           },

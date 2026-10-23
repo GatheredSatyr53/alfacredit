@@ -71,6 +71,9 @@ services:
       Scoring__TimeoutSeconds: ${SCORING_TIMEOUT_SECONDS:-5}
       Scoring__Retries: ${SCORING_RETRIES:-2}
       Contracts__RevealCodeInResponse: ${CONTRACTS_REVEAL_CODE:-true}
+      DemoManager__Enabled: ${DEMO_MANAGER_ENABLED:-true}
+      DemoManager__DelaySeconds: ${DEMO_MANAGER_DELAY_SECONDS:-8}
+      DemoManager__ApprovalProbability: ${DEMO_MANAGER_APPROVAL_PROBABILITY:-0.5}
     ports:
       - "${API_PORT:-8080}:8080"
     healthcheck:

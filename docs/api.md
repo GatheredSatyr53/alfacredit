@@ -209,6 +209,7 @@
     "type": "Approved",
     "isFinal": true,
     "decidedBy": "Auto",
+    "isSimulated": false,
     "recommendedType": null,
     "approvedAmount": 1500000, "approvedTermMonths": 12, "interestRate": 19.5, "monthlyPayment": 138593.06,
     "conditions": null,
@@ -237,7 +238,7 @@
 | `Approved` | Approved | `offer` на запрошенных условиях |
 | `ApprovedWithConditions` | ApprovedWithConditions | `offer` с новыми условиями, `decision.conditions` объясняет изменения, в `reasons` есть `amount_reduced` |
 | `Rejected` | Rejected | `offer` = null, `reasons` перечисляют стоп-факторы или причину по грейду |
-| `ManualReview` | ManualReview | `isFinal` = false, `recommendedType` показывает рекомендацию автоматики менеджеру |
+| `ManualReview` | ManualReview | `isFinal` = false, `recommendedType` показывает рекомендацию автоматики менеджеру. В демо-режиме через несколько секунд появляется второе решение с `decidedBy` = `Manager` и `isSimulated` = `true` (ответ менеджера смоделирован, причина `demo_manager`): одобрение с предложением или окончательный отказ, см. `decision-logic.md` |
 
 Сотрудник банка в том же методе дополнительно получает `scoring` и `checks` (результаты ЕГРЮЛ, ФНС, БКИ, ФССП
 с краткими выводами и флагами риска). Клиенту эти поля приходят как `null`.

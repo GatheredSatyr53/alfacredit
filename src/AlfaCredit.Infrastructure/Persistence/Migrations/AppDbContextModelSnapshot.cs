@@ -592,6 +592,12 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_final");
 
+                    b.Property<bool>("IsSimulated")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_simulated");
+
                     b.Property<decimal?>("MonthlyPayment")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")

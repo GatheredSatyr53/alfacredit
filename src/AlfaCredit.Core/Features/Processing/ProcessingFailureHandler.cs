@@ -2,6 +2,8 @@ using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Core.Common;
 using AlfaCredit.Core.Domain.Applications;
 using AlfaCredit.Core.Domain.Feed;
+using AlfaCredit.Core.Domain.Processing;
+using AlfaCredit.Core.Features.Decisions;
 using AlfaCredit.Core.Features.Feed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,6 +18,7 @@ public sealed class ProcessingFailureHandler(
     IUnitOfWork unitOfWork,
     TimeProvider clock,
     IOptions<ProcessingOptions> options,
+    IOptions<DemoManagerOptions> demoManager,
     ILogger<ProcessingFailureHandler> logger)
 {
     public async Task HandleAsync(Guid jobId, Exception exception, CancellationToken cancellationToken)
@@ -47,6 +50,10 @@ public sealed class ProcessingFailureHandler(
                 application.RouteToManualReview($"Автоматическая обработка не удалась на этапе {job.Stage}. Заявка передана менеджеру.", now);
                 feed.NotifyCompany(application, FeedItemType.ManualReview, $"Заявка {application.Number} передана менеджеру", "Автоматическая обработка приостановлена, менеджер продолжит рассмотрение вручную.");
                 await feed.NotifyManagersAsync(application, FeedItemType.ManualReview, $"Заявка {application.Number}: сбой автоматической обработки", $"Этап {job.Stage}: {exception.Message}", cancellationToken);
+                if (demoManager.Value.Enabled)
+                {
+                    jobs.Add(ProcessingJob.Create(application.Id, ProcessingStage.ManagerDecision, now, demoManager.Value.Delay, options.Value.MaxAttempts));
+                }
             }
             else
             {

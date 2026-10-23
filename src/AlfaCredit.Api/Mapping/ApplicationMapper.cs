@@ -52,6 +52,7 @@ public static class ApplicationMapper
         decision.Type,
         decision.IsFinal,
         decision.DecidedBy,
+        decision.IsSimulated,
         decision.RecommendedType,
         decision.ApprovedAmount,
         decision.ApprovedTermMonths,

@@ -61,6 +61,9 @@ public sealed class Decision
     /// <summary>Окончательное решение: одобрение, одобрение с условиями или отказ.</summary>
     public bool IsFinal { get; private set; }
 
+    /// <summary>Ответ менеджера смоделирован демо-режимом, настоящий сотрудник заявку не рассматривал.</summary>
+    public bool IsSimulated { get; private set; }
+
     public DateTimeOffset DecidedAt { get; private set; }
 
     public IReadOnlyList<DecisionReason> Reasons =>
@@ -78,7 +81,8 @@ public sealed class Decision
         decimal? monthlyPayment,
         string? conditions,
         IEnumerable<DecisionReason> reasons,
-        DateTimeOffset now) =>
+        DateTimeOffset now,
+        bool isSimulated = false) =>
         new()
         {
             Id = Guid.CreateVersion7(),
@@ -94,6 +98,7 @@ public sealed class Decision
             Conditions = conditions is { Length: > ConditionsMaxLength } ? conditions[..ConditionsMaxLength] : conditions,
             ReasonsJson = JsonSerializer.Serialize(reasons.ToList(), JsonOptions),
             IsFinal = type != DecisionType.ManualReview,
+            IsSimulated = isSimulated,
             DecidedAt = now,
         };
 }

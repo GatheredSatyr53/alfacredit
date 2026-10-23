@@ -24,6 +24,7 @@ internal sealed class DecisionConfiguration : IEntityTypeConfiguration<Decision>
         builder.Property(d => d.Conditions).HasColumnName("conditions").HasMaxLength(Decision.ConditionsMaxLength);
         builder.Property(d => d.ReasonsJson).HasColumnName("reasons").HasColumnType("jsonb").IsRequired();
         builder.Property(d => d.IsFinal).HasColumnName("is_final").IsRequired();
+        builder.Property(d => d.IsSimulated).HasColumnName("is_simulated").IsRequired().HasDefaultValue(false);
         builder.Property(d => d.DecidedAt).HasColumnName("decided_at").IsRequired();
 
         // Вычисляемое свойство: список причин живёт в reasons (jsonb), это не навигация

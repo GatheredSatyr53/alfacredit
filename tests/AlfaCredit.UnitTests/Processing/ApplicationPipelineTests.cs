@@ -257,7 +257,7 @@ public sealed class ApplicationPipelineTests
         }
     }
 
-    private ApplicationPipeline CreatePipeline(IScoringService? scoring = null)
+    private ApplicationPipeline CreatePipeline(IScoringService? scoring = null, DemoManagerOptions? demoManager = null, bool demoApproves = true)
     {
         var policyOptions = new DecisionPolicyOptions();
         return new ApplicationPipeline(
@@ -276,6 +276,8 @@ public sealed class ApplicationPipelineTests
             _clock,
             Options.Create(new ProcessingOptions { StageDelaySeconds = 0 }),
             Options.Create(policyOptions),
+            Options.Create(demoManager ?? new DemoManagerOptions { Enabled = false }),
+            new FixedDemoManagerChooser(demoApproves),
             NullLogger<ApplicationPipeline>.Instance);
     }
 }

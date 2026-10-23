@@ -71,6 +71,18 @@ internal sealed class RecordingNotifier : IApplicationNotifier
     }
 }
 
+/// <summary>Демо-менеджер для тестов: всегда одобряет или всегда отказывает.</summary>
+internal sealed class FixedDemoManagerChooser(bool approves) : AlfaCredit.Core.Features.Decisions.IDemoManagerChooser
+{
+    public int Calls { get; private set; }
+
+    public bool Approves()
+    {
+        Calls++;
+        return approves;
+    }
+}
+
 /// <summary>Банковское ядро для тестов: выдаёт платёжные поручения, умеет падать заданное число раз.</summary>
 internal sealed class FakeDisbursementGateway : IDisbursementGateway
 {

@@ -72,6 +72,10 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Processing:PollIntervalMs", "100");
         builder.UseSetting("Simulators:LatencyMs", "0");
         builder.UseSetting("Simulators:FailureRate", "0");
+        // Демо-менеджер отвечает одобрением через несколько секунд: проверки статуса ManualReview успевают выполниться
+        builder.UseSetting("DemoManager:Enabled", "true");
+        builder.UseSetting("DemoManager:DelaySeconds", "6");
+        builder.UseSetting("DemoManager:ApprovalProbability", "1");
         ConfigureTestSettings(builder);
     }
 }

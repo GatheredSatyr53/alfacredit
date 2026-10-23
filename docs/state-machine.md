@@ -25,9 +25,9 @@ stateDiagram-v2
     Deciding --> ManualReview : грейд D, сумма выше лимита
     Deciding --> Rejected : стоп-фактор или грейд E
     ManualReview --> NeedsClarification : менеджер запросил данные
-    ManualReview --> Approved : менеджер
-    ManualReview --> ApprovedWithConditions : менеджер
-    ManualReview --> Rejected : менеджер
+    ManualReview --> Approved : менеджер (в демо-режиме смоделирован)
+    ManualReview --> ApprovedWithConditions : менеджер (в демо-режиме смоделирован)
+    ManualReview --> Rejected : менеджер (в демо-режиме смоделирован)
     ManualReview --> Cancelled : клиент
     Approved --> ContractSigning : клиент принял условия
     Approved --> OfferDeclined : клиент отказался или срок истёк
@@ -63,7 +63,7 @@ stateDiagram-v2
 | Enriching | ManualReview | система | внешние проверки недоступны после повторных попыток |
 | Scoring | Deciding | система | балл и грейд рассчитаны |
 | Deciding | Approved / ApprovedWithConditions / Rejected / ManualReview | система | кредитная политика, см. `decision-logic.md` |
-| ManualReview | Approved / ApprovedWithConditions / Rejected / NeedsClarification | менеджер | ручное решение с комментарием |
+| ManualReview | Approved / ApprovedWithConditions / Rejected / NeedsClarification | менеджер | ручное решение с комментарием; в демо-режиме (`DemoManager`) ответ моделируется системой через несколько секунд, решение помечено `isSimulated`, см. `decision-logic.md` |
 | Approved, ApprovedWithConditions | ContractSigning | клиент | принял предложение |
 | Approved, ApprovedWithConditions | OfferDeclined | клиент, система | отказался или истёк срок предложения |
 | ContractSigning | Signed | клиент | подписал договор кодом подтверждения, см. `docs/completion-flow.md` |
@@ -105,7 +105,7 @@ stateDiagram-v2
 
 | Ветка | Как в неё попадают | Что уже есть | Чего не хватает |
 |---|---|---|---|
-| `ManualReview` | грейд D; сумма выше лимита автоодобрения; продукт с залогом; недоступен ЕГРЮЛ или БКИ после трёх попыток; сбой этапа конвейера после трёх попыток | переходы в workflow (менеджер → Approved, ApprovedWithConditions, Rejected, NeedsClarification), рекомендация автоматики в `decision.recommendedType`, событие менеджеру в ленте, клиент может отменить | эндпоинты менеджера: очередь заявок, решение с комментарием (создаёт финальный `Decision` и предложение), запрос уточнений |
+| `ManualReview` | грейд D; сумма выше лимита автоодобрения; продукт с залогом; недоступен ЕГРЮЛ или БКИ после трёх попыток; сбой этапа конвейера после трёх попыток | переходы в workflow (менеджер → Approved, ApprovedWithConditions, Rejected, NeedsClarification), рекомендация автоматики в `decision.recommendedType`, событие менеджеру в ленте, клиент может отменить; **в демо-режиме** ответ менеджера моделируется (`DemoManager`, 50/50 одобрение с условиями или отказ, пометка `isSimulated`) | настоящие эндпоинты менеджера: очередь заявок, решение с комментарием (создаёт финальный `Decision` и предложение), запрос уточнений; при их появлении заглушка выключается `DemoManager__Enabled=false` |
 | `NeedsClarification` | проверка данных нашла пропуски: нет выручки, ОГРН, расходов и прибыли для сумм выше 3 млн ₽ и продуктов «Кредитная линия», «Инвестиционный»; в будущем запрос менеджера | переход клиента `answerClarification` → Validating в workflow, текст запроса в `history` и ленте, клиент может отменить | эндпоинт ответа клиента: обновить данные компании или приложить документы и вернуть заявку в Validating, после чего конвейер продолжает с проверки |
 | `Signed` при сбое выдачи | симулятор банковского ядра трижды не принял перевод: попытки записаны в `disbursements` со статусом `Failed`, заявка остаётся в `Signed`, менеджер получил событие | идемпотентный повтор перевода по договору (`IDisbursementGateway`) | эндпоинт менеджера «повторить выдачу» или отложенный автоматический повтор; сейчас задание закрыто как `Failed` и перезапустить его можно только вручную в базе |
 
