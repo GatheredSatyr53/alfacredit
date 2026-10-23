@@ -1,4 +1,5 @@
 using AlfaCredit.Core.Abstractions;
+using AlfaCredit.Core.Common;
 using AlfaCredit.Core.Domain.Applications;
 using AlfaCredit.Core.Domain.Checks;
 using AlfaCredit.Core.Domain.Companies;
@@ -48,6 +49,23 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Disbursement> Disbursements => Set<Disbursement>();
 
     public DbSet<FeedItem> FeedItems => Set<FeedItem>();
+
+    /// <summary>
+    /// Сохранение как единица работы. Конфликт оптимистической блокировки (xmin заявки) означает, что параллельный запрос
+    /// уже изменил заявку: повторное подписание, принятие предложения или выдача не проходят вторым разом и дают 409.
+    /// </summary>
+    async Task<int> IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            ChangeTracker.Clear();
+            throw new ConcurrencyConflictException("Заявка была изменена другим запросом. Обновите данные и повторите действие, если оно всё ещё нужно.", ex);
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

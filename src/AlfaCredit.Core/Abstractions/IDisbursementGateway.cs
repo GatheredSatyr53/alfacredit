@@ -8,7 +8,11 @@ public sealed record DisbursementReceipt(string PaymentOrderNumber, DateTimeOffs
 /// <summary>Банковское ядро не выполнило перевод: временный сбой, задание конвейера повторит попытку.</summary>
 public sealed class DisbursementFailedException(string message) : Exception(message);
 
-/// <summary>Банковское ядро: перевод суммы кредита на расчётный счёт заёмщика. В прототипе симулятор.</summary>
+/// <summary>
+/// Банковское ядро: перевод суммы кредита на расчётный счёт заёмщика. В прототипе симулятор.
+/// Идентификатор договора служит ключом идемпотентности: повторный вызов по тому же договору (повтор задания,
+/// перезапуск после сбоя) возвращает прежнее платёжное поручение и не переводит деньги второй раз.
+/// </summary>
 public interface IDisbursementGateway
 {
     Task<DisbursementReceipt> TransferAsync(LoanContract contract, CancellationToken cancellationToken);

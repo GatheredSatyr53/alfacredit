@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Core.Domain.Contracts;
 using Microsoft.Extensions.Logging;
@@ -5,12 +6,25 @@ using Microsoft.Extensions.Options;
 
 namespace AlfaCredit.Infrastructure.Simulators;
 
-/// <summary>Банковское ядро: моделирует перевод суммы кредита на расчётный счёт с задержкой и настраиваемой вероятностью сбоя.</summary>
-internal sealed class CoreBankingSimulator(IOptions<SimulatorOptions> options, TimeProvider clock, ILogger<CoreBankingSimulator> logger) : IDisbursementGateway
+/// <summary>
+/// Банковское ядро: моделирует перевод суммы кредита на расчётный счёт с задержкой и настраиваемой вероятностью сбоя.
+/// Идемпотентно по договору: повторный перевод по тому же договору возвращает прежнее платёжное поручение,
+/// как это делает настоящее ядро по ключу идемпотентности.
+/// </summary>
+public sealed class CoreBankingSimulator(IOptions<SimulatorOptions> options, TimeProvider clock, ILogger<CoreBankingSimulator> logger) : IDisbursementGateway
 {
+    private readonly ConcurrentDictionary<Guid, DisbursementReceipt> _processed = new();
+
     public async Task<DisbursementReceipt> TransferAsync(LoanContract contract, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(contract);
+
+        if (_processed.TryGetValue(contract.Id, out var existing))
+        {
+            logger.LogInformation("Transfer for contract {Contract} already processed as {Order}: idempotent replay", contract.Number, existing.PaymentOrderNumber);
+            return existing;
+        }
+
         var settings = options.Value;
         if (settings.LatencyMs > 0)
         {
@@ -25,9 +39,9 @@ internal sealed class CoreBankingSimulator(IOptions<SimulatorOptions> options, T
 
         var now = clock.GetUtcNow();
         var suffix = new Random(StableSeed(contract.Id)).Next(1000, 10_000);
-        var paymentOrder = $"PO-{now:yyyyMMdd}-{suffix}";
-        logger.LogInformation("Simulated transfer of {Amount} to {Account} for contract {Contract}: payment order {Order}", contract.Amount, contract.DisbursementAccount, contract.Number, paymentOrder);
-        return new DisbursementReceipt(paymentOrder, now);
+        var receipt = _processed.GetOrAdd(contract.Id, new DisbursementReceipt($"PO-{now:yyyyMMdd}-{suffix}", now));
+        logger.LogInformation("Simulated transfer of {Amount} to {Account} for contract {Contract}: payment order {Order}", contract.Amount, contract.DisbursementAccount, contract.Number, receipt.PaymentOrderNumber);
+        return receipt;
     }
 
     private static int StableSeed(Guid id)

@@ -42,6 +42,12 @@ internal sealed class DomainExceptionHandler(IProblemDetailsService problemDetai
                 Title = "Действие сейчас невозможно",
                 Detail = conflict.Message,
             },
+            ConcurrencyConflictException concurrency => new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Данные изменились параллельно",
+                Detail = concurrency.Message,
+            },
             _ => null,
         };
 
