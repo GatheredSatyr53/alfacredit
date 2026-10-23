@@ -3,6 +3,7 @@
 Базовый адрес при запуске через Docker Compose: `http://localhost:8080`, при `dotnet run`: `http://localhost:5080`.
 Интерактивная документация: `/swagger`, машиночитаемый контракт: `/swagger/v1/swagger.json` (копия в `docs/openapi.json`).
 Коллекции запросов: `docs/requests.http`, `docs/postman_collection.json`.
+Отдельные контракты: предварительный подбор финансирования `docs/financing-preview.md`, завершение заявки `docs/completion-flow.md`.
 
 ## Общие правила
 
