@@ -65,6 +65,8 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Seed:Enabled", "true");
         builder.UseSetting("Seed:DemoPassword", DemoPassword);
         builder.UseSetting("Swagger:Enabled", "true");
+        // Тесты логинятся десятки раз в минуту с одного адреса: боевой лимит 20 попыток здесь мешает
+        builder.UseSetting("RateLimiting:LoginPermitLimit", "1000");
         // Конвейер в тестах работает быстро, но с секундной паузой: отмена заявки сразу после создания остаётся возможной
         builder.UseSetting("Processing:StageDelaySeconds", "1");
         builder.UseSetting("Processing:PollIntervalMs", "100");
