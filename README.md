@@ -38,6 +38,7 @@
 применяет кредитную политику: стоп-факторы, лимит автоодобрения, правила по грейдам A–E.
 
 Документация: [описание API с примерами](docs/api.md), [жизненный цикл заявки](docs/state-machine.md),
+[завершение заявки: договор и выдача](docs/completion-flow.md),
 [скоринг и кредитная политика](docs/decision-logic.md), [модель данных](docs/data-model.md),
 [контракт с сервисом скоринга](docs/scoring-contract.md), [OpenAPI](docs/openapi.json), [план backend](docs/backend-plan.md).
 

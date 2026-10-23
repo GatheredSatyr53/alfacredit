@@ -33,8 +33,9 @@ stateDiagram-v2
     Approved --> OfferDeclined : клиент отказался или срок истёк
     ApprovedWithConditions --> ContractSigning : клиент принял условия
     ApprovedWithConditions --> OfferDeclined : клиент отказался или срок истёк
-    ContractSigning --> Signed : клиент подписал
-    Signed --> Disbursed : выдача средств (симуляция)
+    ContractSigning --> Signed : клиент подписал кодом подтверждения
+    ContractSigning --> Cancelled : клиент отказался или истёк срок подписания
+    Signed --> Disbursed : выдача средств (симуляция банковского ядра)
     Disbursed --> [*]
     Rejected --> [*]
     Cancelled --> [*]
@@ -52,7 +53,8 @@ stateDiagram-v2
 | Из | В | Кто | Когда |
 |---|---|---|---|
 | Submitted | Validating | система | конвейер взял заявку в работу |
-| Submitted, Validating, NeedsClarification, ManualReview | Cancelled | клиент | `POST /api/applications/{id}/cancel` |
+| Submitted, Validating, NeedsClarification, ManualReview, ContractSigning | Cancelled | клиент | `POST /api/applications/{id}/cancel` |
+| ContractSigning | Cancelled | система | истёк срок подписания договора (5 дней) |
 | Validating | Enriching | система | обязательные данные и документы на месте |
 | Validating | NeedsClarification | система, менеджер | чего-то не хватает |
 | Submitted, Validating, Scoring | ManualReview | система | этап конвейера не удалось выполнить после трёх попыток |
@@ -64,8 +66,8 @@ stateDiagram-v2
 | ManualReview | Approved / ApprovedWithConditions / Rejected / NeedsClarification | менеджер | ручное решение с комментарием |
 | Approved, ApprovedWithConditions | ContractSigning | клиент | принял предложение |
 | Approved, ApprovedWithConditions | OfferDeclined | клиент, система | отказался или истёк срок предложения |
-| ContractSigning | Signed | клиент | подписал договор кодом из кабинета |
-| Signed | Disbursed | система | симуляция выдачи средств |
+| ContractSigning | Signed | клиент | подписал договор кодом подтверждения, см. `docs/completion-flow.md` |
+| Signed | Disbursed | система | задание Disburse конвейера: симуляция выдачи средств на расчётный счёт |
 
 ## Прогресс для клиента
 
@@ -89,9 +91,9 @@ stateDiagram-v2
 
 | Действие | Переход | Эндпоинт |
 |---|---|---|
-| `cancel` | в Cancelled | `POST /api/applications/{id}/cancel` |
+| `cancel` | в Cancelled | `POST /api/applications/{id}/cancel`; в статусе ContractSigning это отказ от подписания |
 | `answerClarification` | NeedsClarification в Validating | этап 3 |
 | `acceptOffer` | в ContractSigning | `POST /api/applications/{id}/offer/accept` |
 | `declineOffer` | в OfferDeclined | `POST /api/applications/{id}/offer/decline`; истёкшее предложение закрывает система |
-| `signContract` | в Signed | этап 4 |
+| `signContract` | в Signed | два запроса: `POST /api/applications/{id}/contract/sign/request-code`, затем `POST /api/applications/{id}/contract/sign` с кодом; см. `docs/completion-flow.md` |
 | `requestClarification`, `approve`, `approveWithConditions`, `reject` | решения менеджера | этап 3 |
