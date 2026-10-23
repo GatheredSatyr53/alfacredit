@@ -90,7 +90,7 @@ public sealed class ApplicationsController(ApplicationService applications) : Co
     }
 
     /// <summary>Принять предложение банка по одобренной заявке.</summary>
-    /// <remarks>Доступно в статусах Approved и ApprovedWithConditions, пока предложение действует. Переводит заявку к подписанию договора.</remarks>
+    /// <remarks>Доступно в статусах Approved и ApprovedWithConditions, пока предложение действует. Переводит заявку к подписанию договора и формирует договор (поле contract в ответе).</remarks>
     /// <response code="200">Предложение принято, возвращается актуальное состояние заявки.</response>
     /// <response code="403">Нет доступа к заявке.</response>
     /// <response code="404">Заявка не найдена.</response>
@@ -131,7 +131,7 @@ public sealed class ApplicationsController(ApplicationService applications) : Co
     }
 
     /// <summary>Отменить заявку.</summary>
-    /// <remarks>Доступно клиенту, пока банк не принял решение. Тело запроса необязательно.</remarks>
+    /// <remarks>Доступно клиенту, пока банк не принял решение, а также на этапе подписания договора (отказ от подписания). Тело запроса необязательно.</remarks>
     /// <response code="200">Заявка отменена, возвращается её актуальное состояние.</response>
     /// <response code="403">Нет доступа к заявке.</response>
     /// <response code="404">Заявка не найдена.</response>

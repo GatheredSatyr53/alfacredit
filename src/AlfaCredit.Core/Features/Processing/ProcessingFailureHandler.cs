@@ -1,4 +1,5 @@
 using AlfaCredit.Core.Abstractions;
+using AlfaCredit.Core.Common;
 using AlfaCredit.Core.Domain.Applications;
 using AlfaCredit.Core.Domain.Feed;
 using AlfaCredit.Core.Features.Feed;
@@ -41,9 +42,18 @@ public sealed class ProcessingFailureHandler(
         var application = await applications.FindByIdAsync(job.ApplicationId, cancellationToken);
         if (application is not null && !application.IsTerminal && application.Status is not (ApplicationStatus.ManualReview or ApplicationStatus.NeedsClarification))
         {
-            application.RouteToManualReview($"Автоматическая обработка не удалась на этапе {job.Stage}. Заявка передана менеджеру.", now);
-            feed.NotifyCompany(application, FeedItemType.ManualReview, $"Заявка {application.Number} передана менеджеру", "Автоматическая обработка приостановлена, менеджер продолжит рассмотрение вручную.");
-            await feed.NotifyManagersAsync(application, FeedItemType.ManualReview, $"Заявка {application.Number}: сбой автоматической обработки", $"Этап {job.Stage}: {exception.Message}", cancellationToken);
+            if (ApplicationWorkflow.CanTransition(application.Status, ApplicationStatus.ManualReview, ActorType.System))
+            {
+                application.RouteToManualReview($"Автоматическая обработка не удалась на этапе {job.Stage}. Заявка передана менеджеру.", now);
+                feed.NotifyCompany(application, FeedItemType.ManualReview, $"Заявка {application.Number} передана менеджеру", "Автоматическая обработка приостановлена, менеджер продолжит рассмотрение вручную.");
+                await feed.NotifyManagersAsync(application, FeedItemType.ManualReview, $"Заявка {application.Number}: сбой автоматической обработки", $"Этап {job.Stage}: {exception.Message}", cancellationToken);
+            }
+            else
+            {
+                // Например, выдача по подписанному договору: статус не меняется, операцию завершит сотрудник банка
+                feed.NotifyCompany(application, FeedItemType.StatusChanged, $"Заявка {application.Number}: операция банка задерживается", "Автоматическая операция не завершилась, сотрудник банка завершит её вручную. Ничего делать не нужно.");
+                await feed.NotifyManagersAsync(application, FeedItemType.ManualReview, $"Заявка {application.Number}: сбой на этапе {job.Stage}", $"Этап {job.Stage} не выполнен после {job.Attempts} попыток: {exception.Message}. Требуется участие сотрудника.", cancellationToken);
+            }
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

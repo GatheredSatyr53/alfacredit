@@ -89,6 +89,27 @@ Authorization: Bearer {{token}}
   "reason": "Нашли предложение с меньшей ставкой"
 }
 
+### Договор по заявке (после принятия предложения): стороны, условия, график платежей
+GET {{baseUrl}}/api/applications/{{applicationId}}/contract
+Authorization: Bearer {{token}}
+
+### Печатная форма договора (HTML)
+GET {{baseUrl}}/api/applications/{{applicationId}}/contract/document
+Authorization: Bearer {{token}}
+
+### Запросить код подтверждения для подписания: код в ответе (demoCode) и в ленте событий
+POST {{baseUrl}}/api/applications/{{applicationId}}/contract/sign/request-code
+Authorization: Bearer {{token}}
+
+### Подписать договор кодом подтверждения -> статус Signed, через ~2 секунды Disbursed
+POST {{baseUrl}}/api/applications/{{applicationId}}/contract/sign
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "code": "483921"
+}
+
 ### Лента событий
 GET {{baseUrl}}/api/feed?page=1&pageSize=20
 Authorization: Bearer {{token}}

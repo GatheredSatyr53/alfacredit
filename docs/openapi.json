@@ -222,7 +222,7 @@
           "Applications"
         ],
         "summary": "Принять предложение банка по одобренной заявке.",
-        "description": "Доступно в статусах Approved и ApprovedWithConditions, пока предложение действует. Переводит заявку к подписанию договора.",
+        "description": "Доступно в статусах Approved и ApprovedWithConditions, пока предложение действует. Переводит заявку к подписанию договора и формирует договор (поле contract в ответе).",
         "parameters": [
           {
             "name": "id",
@@ -381,7 +381,7 @@
           "Applications"
         ],
         "summary": "Отменить заявку.",
-        "description": "Доступно клиенту, пока банк не принял решение. Тело запроса необязательно.",
+        "description": "Доступно клиенту, пока банк не принял решение, а также на этапе подписания договора (отказ от подписания). Тело запроса необязательно.",
         "parameters": [
           {
             "name": "id",
@@ -650,6 +650,310 @@
           },
           "404": {
             "description": "Компания не найдена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/applications/{id}/contract": {
+      "get": {
+        "tags": [
+          "Contracts"
+        ],
+        "summary": "Договор по заявке: стороны, условия, подпись и график платежей.",
+        "description": "Клиент видит договоры своих компаний, сотрудник банка любые. Договор появляется после принятия предложения.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Договор найден.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа к заявке.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена или договор ещё не сформирован.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/applications/{id}/contract/document": {
+      "get": {
+        "tags": [
+          "Contracts"
+        ],
+        "summary": "Печатная форма договора (HTML).",
+        "description": "Самодостаточный HTML для просмотра, печати и сохранения. Токен передаётся заголовком, поэтому фронтенд загружает документ через fetch.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML-документ.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Нет доступа к заявке.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена или договор ещё не сформирован.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/applications/{id}/contract/sign/request-code": {
+      "post": {
+        "tags": [
+          "Contracts"
+        ],
+        "summary": "Запросить код подтверждения для подписания договора.",
+        "description": "Роль Client, статус заявки ContractSigning. Код доставляется в ленту событий кабинета (имитация SMS)\nи действует 10 минут; повторный запрос выдаёт новый код. В демо-режиме код дублируется в ответе (demoCode).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Код выдан.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignCodeResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Не клиент или нет доступа к заявке.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Заявка не на подписании или срок подписания истёк.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется аутентификация"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/applications/{id}/contract/sign": {
+      "post": {
+        "tags": [
+          "Contracts"
+        ],
+        "summary": "Подписать договор кодом подтверждения.",
+        "description": "Роль Client. Верный код переводит заявку в Signed и ставит в очередь выдачу средств: через несколько секунд статус\nстанет Disbursed. Неверный код расходует попытку и возвращает 400 с errors.code.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignContractRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignContractRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignContractRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Договор подписан, возвращается актуальное состояние заявки.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Код не передан, не 6 цифр или неверный (errors.code).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Не клиент или нет доступа к заявке.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Заявка не найдена.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Код не запрашивали, его срок истёк, попытки исчерпаны или заявка не на подписании.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1008,6 +1312,12 @@
           "offer": {
             "$ref": "#/components/schemas/OfferDto"
           },
+          "contract": {
+            "$ref": "#/components/schemas/ContractSummaryDto"
+          },
+          "disbursement": {
+            "$ref": "#/components/schemas/DisbursementDto"
+          },
           "scoring": {
             "$ref": "#/components/schemas/ScoringDto"
           },
@@ -1341,6 +1651,267 @@
         ],
         "type": "string"
       },
+      "ContractBorrowerDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "inn": {
+            "type": "string"
+          },
+          "ogrn": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "headName": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Заёмщик."
+      },
+      "ContractDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ContractStatus"
+          },
+          "applicationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "applicationNumber": {
+            "type": "string"
+          },
+          "lender": {
+            "$ref": "#/components/schemas/ContractPartyDto"
+          },
+          "borrower": {
+            "$ref": "#/components/schemas/ContractBorrowerDto"
+          },
+          "product": {
+            "$ref": "#/components/schemas/ApplicationProductDto"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/LoanPurpose"
+          },
+          "purposeTitle": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "termMonths": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "interestRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "monthlyPayment": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalPayment": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalInterest": {
+            "type": "number",
+            "format": "double"
+          },
+          "disbursementAccount": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "signingDeadline": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "signedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "signedBy": {
+            "$ref": "#/components/schemas/ContractSignerDto"
+          },
+          "signatureMethod": {
+            "type": "string",
+            "nullable": true
+          },
+          "signing": {
+            "$ref": "#/components/schemas/ContractSigningDto"
+          },
+          "schedule": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleRowDto"
+            }
+          },
+          "documentUrl": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Полный договор: стороны, условия, подпись и график платежей. SignedBy и SignatureMethod заполняются после подписания;\nSchedule это аннуитетный график, даты в нём ориентировочные до выдачи средств."
+      },
+      "ContractPartyDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Кредитор."
+      },
+      "ContractSignerDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Кто подписал договор."
+      },
+      "ContractSigningDto": {
+        "type": "object",
+        "properties": {
+          "codeRequestedAt": {
+            "type": "string",
+            "description": "Когда запрошен действующий код; null, если код не запрашивали.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "codeExpiresAt": {
+            "type": "string",
+            "description": "До какого момента действует код.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "attemptsLeft": {
+            "type": "integer",
+            "description": "Сколько попыток ввода осталось для текущего кода.",
+            "format": "int32"
+          },
+          "canRequestCode": {
+            "type": "boolean",
+            "description": "Можно ли запросить код: договор ожидает подписи и срок не истёк."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Состояние подписания кодом подтверждения."
+      },
+      "ContractStatus": {
+        "enum": [
+          "AwaitingSignature",
+          "Signed",
+          "Expired",
+          "Cancelled"
+        ],
+        "type": "string"
+      },
+      "ContractSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Идентификатор договора.",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "string",
+            "description": "Номер договора, например KD-000001."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ContractStatus"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Сумма кредита, ₽.",
+            "format": "double"
+          },
+          "termMonths": {
+            "type": "integer",
+            "description": "Срок, мес.",
+            "format": "int32"
+          },
+          "interestRate": {
+            "type": "number",
+            "description": "Годовая ставка, %.",
+            "format": "double"
+          },
+          "monthlyPayment": {
+            "type": "number",
+            "description": "Ежемесячный платёж, ₽.",
+            "format": "double"
+          },
+          "totalPayment": {
+            "type": "number",
+            "description": "Сумма всех платежей по графику, ₽.",
+            "format": "double"
+          },
+          "totalInterest": {
+            "type": "number",
+            "description": "Переплата за весь срок, ₽.",
+            "format": "double"
+          },
+          "disbursementAccount": {
+            "type": "string",
+            "description": "Расчётный счёт для зачисления."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "Сформирован (UTC).",
+            "format": "date-time"
+          },
+          "signingDeadline": {
+            "type": "string",
+            "description": "До какого момента можно подписать (UTC).",
+            "format": "date-time"
+          },
+          "signedAt": {
+            "type": "string",
+            "description": "Когда подписан (UTC); null, пока не подписан.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "signing": {
+            "$ref": "#/components/schemas/ContractSigningDto"
+          },
+          "documentUrl": {
+            "type": "string",
+            "description": "Печатная форма договора (HTML)."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Краткая карточка договора в заявке. Описано в docs/completion-flow.md."
+      },
       "CreateApplicationRequest": {
         "required": [
           "companyId",
@@ -1520,6 +2091,51 @@
         "additionalProperties": false,
         "description": "Отказ от предложения банка. Тело запроса необязательно."
       },
+      "DisbursementDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "account": {
+            "type": "string"
+          },
+          "paymentOrderNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/DisbursementStatus"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Выдача средств по договору. Status Completed: средства зачислены, PaymentOrderNumber содержит номер платёжного поручения;\nFailed: банковское ядро не приняло перевод (Error с причиной), попытка повторяется автоматически."
+      },
+      "DisbursementStatus": {
+        "enum": [
+          "Completed",
+          "Failed"
+        ],
+        "type": "string"
+      },
       "ExternalCheckDto": {
         "type": "object",
         "properties": {
@@ -1644,7 +2260,9 @@
           "ContractReady",
           "Disbursed",
           "Recommendation",
-          "News"
+          "News",
+          "SigningCode",
+          "ContractSigned"
         ],
         "type": "string"
       },
@@ -1877,6 +2495,43 @@
         ],
         "type": "string"
       },
+      "ScheduleRowDto": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "description": "Номер платежа с 1.",
+            "format": "int32"
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Дата платежа.",
+            "format": "date"
+          },
+          "payment": {
+            "type": "number",
+            "description": "Платёж, ₽.",
+            "format": "double"
+          },
+          "principal": {
+            "type": "number",
+            "description": "Основной долг, ₽.",
+            "format": "double"
+          },
+          "interest": {
+            "type": "number",
+            "description": "Проценты, ₽.",
+            "format": "double"
+          },
+          "balance": {
+            "type": "number",
+            "description": "Остаток долга после платежа, ₽.",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Строка графика платежей."
+      },
       "ScoringDto": {
         "type": "object",
         "properties": {
@@ -1972,6 +2627,53 @@
           "RulesFallback"
         ],
         "type": "string"
+      },
+      "SignCodeResponse": {
+        "type": "object",
+        "properties": {
+          "contractNumber": {
+            "type": "string",
+            "description": "Номер договора."
+          },
+          "deliveredVia": {
+            "type": "string",
+            "description": "Куда доставлен код: Feed (лента событий кабинета, имитация SMS)."
+          },
+          "codeExpiresAt": {
+            "type": "string",
+            "description": "До какого момента действует код (UTC).",
+            "format": "date-time"
+          },
+          "attemptsLeft": {
+            "type": "integer",
+            "description": "Сколько попыток ввода доступно.",
+            "format": "int32"
+          },
+          "demoCode": {
+            "type": "string",
+            "description": "Сам код; только в демо-режиме (Contracts:RevealCodeInResponse), иначе null.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Ответ на запрос кода подтверждения."
+      },
+      "SignContractRequest": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "minLength": 1,
+            "pattern": "^\\d{6}$",
+            "type": "string",
+            "description": "Код из ленты событий (6 цифр).",
+            "example": "483921"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Подписание договора кодом подтверждения."
       },
       "TaxRegime": {
         "enum": [
@@ -2079,6 +2781,10 @@
     {
       "name": "Companies",
       "description": "Компании клиента. Клиент видит только свои компании, сотрудник банка все."
+    },
+    {
+      "name": "Contracts",
+      "description": "Договор по заявке: просмотр, печатная форма, подписание кодом подтверждения. Сценарий описан в docs/completion-flow.md."
     },
     {
       "name": "Feed",

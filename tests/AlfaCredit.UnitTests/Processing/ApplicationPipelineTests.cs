@@ -30,6 +30,7 @@ public sealed class ApplicationPipelineTests
     private readonly InMemoryJobRepository _jobs = new();
     private readonly InMemoryFeedRepository _feed = new();
     private readonly FakeSources _sources = new();
+    private readonly FakeDisbursementGateway _bank = new();
     private readonly RecordingNotifier _notifier = new();
     private readonly CountingUnitOfWork _unitOfWork = new();
     private readonly FixedTimeProvider _clock = new(TestData.Now);
@@ -267,6 +268,7 @@ public sealed class ApplicationPipelineTests
             _sources,
             _sources,
             scoring ?? new RuleBasedScoringService(),
+            _bank,
             new DecisionPolicy(policyOptions),
             new FeedService(_feed, new InMemoryUsersByRole(_manager), _clock),
             _notifier,

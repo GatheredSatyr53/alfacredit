@@ -1,5 +1,6 @@
 using AlfaCredit.Core.Domain.Applications;
 using AlfaCredit.Core.Domain.Checks;
+using AlfaCredit.Core.Domain.Contracts;
 using AlfaCredit.Core.Domain.Decisions;
 using AlfaCredit.Core.Domain.Scoring;
 using AlfaCredit.Core.Domain.Users;
@@ -72,11 +73,19 @@ internal sealed class CreditApplicationConfiguration : IEntityTypeConfiguration<
         builder.HasMany(a => a.Offers).WithOne().HasForeignKey(o => o.ApplicationId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(a => a.Offers).UsePropertyAccessMode(PropertyAccessMode.Field);
 
+        builder.HasMany(a => a.Contracts).WithOne().HasForeignKey(c => c.ApplicationId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(a => a.Contracts).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(a => a.Disbursements).WithOne().HasForeignKey(d => d.ApplicationId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(a => a.Disbursements).UsePropertyAccessMode(PropertyAccessMode.Field);
+
         // Вычисляемые свойства агрегата, не колонки и не навигации
         builder.Ignore(a => a.LatestScoring);
         builder.Ignore(a => a.LatestDecision);
         builder.Ignore(a => a.FinalDecision);
         builder.Ignore(a => a.CurrentOffer);
+        builder.Ignore(a => a.CurrentContract);
+        builder.Ignore(a => a.CurrentDisbursement);
         builder.Ignore(a => a.ChecksSnapshot);
         builder.Ignore(a => a.IsTerminal);
 

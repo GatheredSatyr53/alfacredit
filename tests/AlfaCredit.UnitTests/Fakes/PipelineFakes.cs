@@ -2,6 +2,7 @@ using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Core.Common;
 using AlfaCredit.Core.Domain.Checks;
 using AlfaCredit.Core.Domain.Companies;
+using AlfaCredit.Core.Domain.Contracts;
 using AlfaCredit.Core.Domain.Feed;
 using AlfaCredit.Core.Domain.Processing;
 using AlfaCredit.Core.Domain.Scoring;
@@ -67,6 +68,29 @@ internal sealed class RecordingNotifier : IApplicationNotifier
     {
         Notifications.Add(notification);
         return Task.CompletedTask;
+    }
+}
+
+/// <summary>Банковское ядро для тестов: выдаёт платёжные поручения, умеет падать заданное число раз.</summary>
+internal sealed class FakeDisbursementGateway : IDisbursementGateway
+{
+    public int FailuresLeft { get; set; }
+
+    public int Calls { get; private set; }
+
+    public List<LoanContract> Transfers { get; } = [];
+
+    public Task<DisbursementReceipt> TransferAsync(LoanContract contract, CancellationToken cancellationToken)
+    {
+        Calls++;
+        if (FailuresLeft > 0)
+        {
+            FailuresLeft--;
+            throw new DisbursementFailedException("simulated core banking outage");
+        }
+
+        Transfers.Add(contract);
+        return Task.FromResult(new DisbursementReceipt($"PO-TEST-{Calls:0000}", new DateTimeOffset(2026, 10, 23, 10, 0, 0, TimeSpan.Zero)));
     }
 }
 

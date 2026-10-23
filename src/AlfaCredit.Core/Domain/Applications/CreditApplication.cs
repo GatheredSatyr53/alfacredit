@@ -1,6 +1,7 @@
 using AlfaCredit.Core.Common;
 using AlfaCredit.Core.Domain.Checks;
 using AlfaCredit.Core.Domain.Companies;
+using AlfaCredit.Core.Domain.Contracts;
 using AlfaCredit.Core.Domain.Decisions;
 using AlfaCredit.Core.Domain.Products;
 using AlfaCredit.Core.Domain.Scoring;
@@ -18,6 +19,8 @@ public sealed class CreditApplication
     private readonly List<ScoringResult> _scoringResults = [];
     private readonly List<Decision> _decisions = [];
     private readonly List<Offer> _offers = [];
+    private readonly List<LoanContract> _contracts = [];
+    private readonly List<Disbursement> _disbursements = [];
 
     private CreditApplication()
     {
@@ -65,6 +68,10 @@ public sealed class CreditApplication
 
     public IReadOnlyList<Offer> Offers => _offers.AsReadOnly();
 
+    public IReadOnlyList<LoanContract> Contracts => _contracts.AsReadOnly();
+
+    public IReadOnlyList<Disbursement> Disbursements => _disbursements.AsReadOnly();
+
     public ScoringResult? LatestScoring => _scoringResults.MaxBy(s => s.ComputedAt);
 
     public Decision? LatestDecision => _decisions.MaxBy(d => d.DecidedAt);
@@ -72,6 +79,10 @@ public sealed class CreditApplication
     public Decision? FinalDecision => _decisions.Where(d => d.IsFinal).MaxBy(d => d.DecidedAt);
 
     public Offer? CurrentOffer => _offers.MaxBy(o => o.CreatedAt);
+
+    public LoanContract? CurrentContract => _contracts.MaxBy(c => c.CreatedAt);
+
+    public Disbursement? CurrentDisbursement => _disbursements.OrderBy(d => d.RequestedAt).LastOrDefault();
 
     public ChecksSnapshot ChecksSnapshot => ExternalCheck.ToSnapshot(_checks);
 
@@ -166,13 +177,12 @@ public sealed class CreditApplication
         _history.Add(ApplicationStatusHistory.Create(Id, from, to, actor, actorUserId, comment, now));
     }
 
-    public void Cancel(Guid userId, string? reason, DateTimeOffset now) =>
-        ChangeStatus(
-            ApplicationStatus.Cancelled,
-            ActorType.Client,
-            userId,
-            string.IsNullOrWhiteSpace(reason) ? "Заявка отменена клиентом." : reason,
-            now);
+    public void Cancel(Guid userId, string? reason, DateTimeOffset now)
+    {
+        var defaultReason = Status == ApplicationStatus.ContractSigning ? "Клиент отказался от подписания договора." : "Заявка отменена клиентом.";
+        ChangeStatus(ApplicationStatus.Cancelled, ActorType.Client, userId, string.IsNullOrWhiteSpace(reason) ? defaultReason : reason, now);
+        CurrentContract?.Cancel(now);
+    }
 
     /// <summary>Действия, доступные участнику в текущем статусе (ключи для кнопок интерфейса).</summary>
     public IReadOnlyList<string> AvailableActions(ActorType actor) =>
@@ -273,6 +283,86 @@ public sealed class CreditApplication
         ChangeStatus(ApplicationStatus.OfferDeclined, ActorType.Client, userId, string.IsNullOrWhiteSpace(reason) ? "Клиент отказался от предложения." : reason, now);
         offer.Decline(now);
         return offer;
+    }
+
+    // ---- Договор и выдача ----
+
+    /// <summary>Прикрепляет сформированный договор после принятия предложения.</summary>
+    public void AttachContract(LoanContract contract)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        if (Status != ApplicationStatus.ContractSigning)
+        {
+            throw new ConflictException("Договор формируется только после принятия предложения.");
+        }
+
+        _contracts.Add(contract);
+    }
+
+    /// <summary>Договор, который сейчас можно подписать; иначе 409 с объяснением.</summary>
+    public LoanContract RequireSignableContract(DateTimeOffset now)
+    {
+        if (Status != ApplicationStatus.ContractSigning)
+        {
+            throw new ConflictException($"Подписание доступно только в статусе «{ApplicationStatusCatalog.Get(ApplicationStatus.ContractSigning).Title}». Текущий статус: «{ApplicationStatusCatalog.Get(Status).Title}».");
+        }
+
+        var contract = CurrentContract ?? throw new ConflictException("Договор по заявке ещё не сформирован.");
+        if (contract.IsSigningExpired(now))
+        {
+            throw new ConflictException($"Срок подписания договора истёк {contract.SigningDeadline:dd.MM.yyyy}. Подайте новую заявку.");
+        }
+
+        return contract;
+    }
+
+    /// <summary>Подписывает договор кодом подтверждения и переводит заявку в «Договор подписан».</summary>
+    public LoanContract SignContract(string? code, Guid userId, string signerName, DateTimeOffset now)
+    {
+        var contract = RequireSignableContract(now);
+        contract.Sign(code, userId, signerName, now);
+        ChangeStatus(ApplicationStatus.Signed, ActorType.Client, userId, $"Договор {contract.Number} подписан простой электронной подписью.", now);
+        return contract;
+    }
+
+    /// <summary>Отменяет заявку, если срок подписания договора истёк. Возвращает true при изменении.</summary>
+    public bool ExpireContractIfNeeded(DateTimeOffset now)
+    {
+        if (Status != ApplicationStatus.ContractSigning)
+        {
+            return false;
+        }
+
+        var contract = CurrentContract;
+        if (contract is null || !contract.IsSigningExpired(now))
+        {
+            return false;
+        }
+
+        contract.Expire(now);
+        ChangeStatus(ApplicationStatus.Cancelled, ActorType.System, null, $"Срок подписания договора {contract.Number} истёк.", now);
+        return true;
+    }
+
+    /// <summary>Фиксирует попытку выдачи; успешная выдача завершает заявку статусом «Средства выданы».</summary>
+    public void RecordDisbursement(Disbursement disbursement, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(disbursement);
+        if (Status != ApplicationStatus.Signed)
+        {
+            throw new ConflictException($"Выдача возможна только по подписанному договору. Текущий статус: «{ApplicationStatusCatalog.Get(Status).Title}».");
+        }
+
+        _disbursements.Add(disbursement);
+        if (disbursement.Status == DisbursementStatus.Completed)
+        {
+            ChangeStatus(
+                ApplicationStatus.Disbursed,
+                ActorType.System,
+                null,
+                $"Средства {Money.FormatRub(disbursement.Amount)} перечислены на расчётный счёт {disbursement.Account}, платёжное поручение {disbursement.PaymentOrderNumber}.",
+                now);
+        }
     }
 
     /// <summary>Переводит заявку в «предложение отклонено», если срок предложения истёк. Возвращает true при изменении.</summary>

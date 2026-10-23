@@ -1,5 +1,6 @@
 using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Core.Features.Applications;
+using AlfaCredit.Core.Features.Contracts;
 using AlfaCredit.Core.Features.Decisions;
 using AlfaCredit.Core.Features.Feed;
 using AlfaCredit.Core.Features.Processing;
@@ -34,6 +35,7 @@ public static class DependencyInjection
         services.AddOptions<DecisionPolicyOptions>().Bind(configuration.GetSection(DecisionPolicyOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
         services.AddOptions<SimulatorOptions>().Bind(configuration.GetSection(SimulatorOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
         services.AddOptions<ScoringOptions>().Bind(configuration.GetSection(ScoringOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
+        services.AddOptions<ContractOptions>().Bind(configuration.GetSection(ContractOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3)));
@@ -55,6 +57,10 @@ public static class DependencyInjection
         services.AddSingleton<IFnsClient, FnsSimulator>();
         services.AddSingleton<ICreditBureauClient, CreditBureauSimulator>();
         services.AddSingleton<IFsspClient, FsspSimulator>();
+
+        // Банковское ядро для выдачи и генератор кодов подписания
+        services.AddSingleton<IDisbursementGateway, CoreBankingSimulator>();
+        services.AddSingleton<ISigningCodeGenerator, RandomSigningCodeGenerator>();
 
         // Скоринг: встроенные правила или внешний сервис с откатом на правила
         services.AddSingleton<RuleBasedScoringService>();
@@ -78,6 +84,7 @@ public static class DependencyInjection
         services.AddSingleton(provider => new DecisionPolicy(provider.GetRequiredService<IOptions<DecisionPolicyOptions>>().Value));
         services.AddScoped<FeedService>();
         services.AddScoped<ApplicationService>();
+        services.AddScoped<ContractService>();
         services.AddScoped<ApplicationPipeline>();
         services.AddScoped<ProcessingFailureHandler>();
         services.AddScoped<OfferExpiryService>();

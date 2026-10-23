@@ -55,6 +55,11 @@ internal sealed class InMemoryApplicationRepository : ICreditApplicationReposito
             others.Count(a => a.Status == ApplicationStatus.Disbursed)));
     }
 
+    public Task<IReadOnlyList<CreditApplication>> ListWithExpiredContractsAsync(DateTimeOffset now, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<CreditApplication>>(Items
+            .Where(a => a.Status == ApplicationStatus.ContractSigning && a.CurrentContract is { } c && c.IsSigningExpired(now))
+            .ToArray());
+
     public Task<IReadOnlyList<CreditApplication>> ListWithExpiredOffersAsync(DateTimeOffset now, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<CreditApplication>>(Items
             .Where(a => a.Status is ApplicationStatus.Approved or ApplicationStatus.ApprovedWithConditions && a.CurrentOffer is { } o && o.IsExpired(now))
@@ -92,5 +97,9 @@ internal sealed class CountingUnitOfWork : IUnitOfWork
 
 internal sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
 {
-    public override DateTimeOffset GetUtcNow() => now;
+    private DateTimeOffset _now = now;
+
+    public override DateTimeOffset GetUtcNow() => _now;
+
+    public void Advance(TimeSpan by) => _now += by;
 }

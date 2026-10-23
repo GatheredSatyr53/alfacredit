@@ -70,6 +70,7 @@ services:
       Scoring__BaseUrl: ${SCORING_BASE_URL:-http://scoring:8000}
       Scoring__TimeoutSeconds: ${SCORING_TIMEOUT_SECONDS:-5}
       Scoring__Retries: ${SCORING_RETRIES:-2}
+      Contracts__RevealCodeInResponse: ${CONTRACTS_REVEAL_CODE:-true}
     ports:
       - "${API_PORT:-8080}:8080"
     healthcheck:

@@ -149,6 +149,7 @@ public sealed class ApplicationServiceTests
             _unitOfWork,
             clock,
             Microsoft.Extensions.Options.Options.Create(new Core.Features.Processing.ProcessingOptions { StageDelaySeconds = 0 }),
+            Microsoft.Extensions.Options.Options.Create(new Core.Features.Contracts.ContractOptions()),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<ApplicationService>.Instance);
     }
 

@@ -2,6 +2,7 @@ using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Core.Domain.Applications;
 using AlfaCredit.Core.Domain.Checks;
 using AlfaCredit.Core.Domain.Companies;
+using AlfaCredit.Core.Domain.Contracts;
 using AlfaCredit.Core.Domain.Decisions;
 using AlfaCredit.Core.Domain.Feed;
 using AlfaCredit.Core.Domain.Processing;
@@ -16,6 +17,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 {
     /// <summary>Последовательность для человекочитаемых номеров заявок AC-000001.</summary>
     public const string ApplicationNumberSequence = "application_number_seq";
+
+    /// <summary>Последовательность для номеров договоров KD-000001.</summary>
+    public const string ContractNumberSequence = "contract_number_seq";
 
     public DbSet<User> Users => Set<User>();
 
@@ -39,11 +43,16 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<Offer> Offers => Set<Offer>();
 
+    public DbSet<LoanContract> LoanContracts => Set<LoanContract>();
+
+    public DbSet<Disbursement> Disbursements => Set<Disbursement>();
+
     public DbSet<FeedItem> FeedItems => Set<FeedItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasSequence<long>(ApplicationNumberSequence).StartsAt(1).IncrementsBy(1);
+        modelBuilder.HasSequence<long>(ContractNumberSequence).StartsAt(1).IncrementsBy(1);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }

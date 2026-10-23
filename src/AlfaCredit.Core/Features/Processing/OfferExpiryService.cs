@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AlfaCredit.Core.Features.Processing;
 
-/// <summary>Переводит заявки с истёкшими предложениями в «предложение отклонено».</summary>
+/// <summary>Закрывает просроченное: заявки с истёкшими предложениями уходят в «предложение отклонено», с неподписанными в срок договорами в «отменена».</summary>
 public sealed class OfferExpiryService(ICreditApplicationRepository applications, FeedService feed, IUnitOfWork unitOfWork, TimeProvider clock, ILogger<OfferExpiryService> logger)
 {
     public async Task<int> ExpireAsync(CancellationToken cancellationToken)
@@ -23,10 +23,21 @@ public sealed class OfferExpiryService(ICreditApplicationRepository applications
             expired++;
         }
 
+        foreach (var application in await applications.ListWithExpiredContractsAsync(now, cancellationToken))
+        {
+            if (!application.ExpireContractIfNeeded(now))
+            {
+                continue;
+            }
+
+            feed.NotifyCompany(application, FeedItemType.StatusChanged, $"Срок подписания договора по заявке {application.Number} истёк", "Заявка отменена. Вы можете подать новую заявку, банк рассмотрит её заново.");
+            expired++;
+        }
+
         if (expired > 0)
         {
             await unitOfWork.SaveChangesAsync(cancellationToken);
-            logger.LogInformation("Expired {Count} offers", expired);
+            logger.LogInformation("Expired {Count} offers or unsigned contracts", expired);
         }
 
         return expired;
