@@ -69,6 +69,7 @@ public static class ApplicationWorkflow
             [ApplicationStatus.ContractSigning] =
             [
                 new(ApplicationStatus.Signed, ActorType.Client),
+                new(ApplicationStatus.Cancelled, ActorType.Client, ActorType.System),
             ],
             [ApplicationStatus.Signed] =
             [

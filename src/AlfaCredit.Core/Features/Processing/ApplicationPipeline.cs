@@ -4,6 +4,7 @@ using AlfaCredit.Core.Common;
 using AlfaCredit.Core.Domain.Applications;
 using AlfaCredit.Core.Domain.Checks;
 using AlfaCredit.Core.Domain.Companies;
+using AlfaCredit.Core.Domain.Contracts;
 using AlfaCredit.Core.Domain.Decisions;
 using AlfaCredit.Core.Domain.Feed;
 using AlfaCredit.Core.Domain.Processing;
@@ -18,7 +19,7 @@ using Microsoft.Extensions.Options;
 namespace AlfaCredit.Core.Features.Processing;
 
 /// <summary>
-/// Автоматический конвейер банка: проверка данных, обогащение внешними сведениями, скоринг, решение.
+/// Автоматический конвейер банка: проверка данных, обогащение внешними сведениями, скоринг, решение, выдача по подписанному договору.
 /// Каждый этап выполняется отдельным заданием из базы, между этапами настраиваемая пауза для наглядности демо.
 /// Этапы идемпотентны по статусу заявки: после перезапуска сервиса задание выполняется заново без дублей.
 /// </summary>
@@ -30,6 +31,7 @@ public sealed class ApplicationPipeline(
     ICreditBureauClient creditBureau,
     IFsspClient fssp,
     IScoringService scoring,
+    IDisbursementGateway disbursements,
     DecisionPolicy policy,
     FeedService feed,
     IApplicationNotifier notifier,
@@ -63,6 +65,7 @@ public sealed class ApplicationPipeline(
             ProcessingStage.Enrich => await EnrichAsync(application, cancellationToken),
             ProcessingStage.Score => await ScoreAsync(application, cancellationToken),
             ProcessingStage.Decide => await DecideAsync(application, cancellationToken),
+            ProcessingStage.Disburse => await DisburseAsync(application, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(job), job.Stage, "Unknown processing stage."),
         };
 
@@ -372,6 +375,40 @@ public sealed class ApplicationPipeline(
 
         var offer = application.ApplyDecision(decision, policyOptions.Value.OfferValidity, now);
         await PublishDecisionAsync(application, decision, offer, cancellationToken);
+        return null;
+    }
+
+    /// <summary>Выдача: перевод через банковское ядро. Неудачная попытка сохраняется и уходит на повтор, успешная завершает заявку.</summary>
+    private async Task<ProcessingStage?> DisburseAsync(CreditApplication application, CancellationToken cancellationToken)
+    {
+        if (application.Status != ApplicationStatus.Signed)
+        {
+            return null;
+        }
+
+        var contract = application.CurrentContract
+            ?? throw new InvalidOperationException($"Application {application.Number} is signed but has no contract.");
+        var requestedAt = clock.GetUtcNow();
+
+        DisbursementReceipt receipt;
+        try
+        {
+            receipt = await disbursements.TransferAsync(contract, cancellationToken);
+        }
+        catch (DisbursementFailedException ex)
+        {
+            application.RecordDisbursement(Disbursement.Failed(application.Id, contract, ex.Message, requestedAt), clock.GetUtcNow());
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            throw;
+        }
+
+        var disbursement = Disbursement.Completed(application.Id, contract, receipt.PaymentOrderNumber, requestedAt, receipt.ProcessedAt);
+        application.RecordDisbursement(disbursement, clock.GetUtcNow());
+
+        feed.NotifyCompany(application, FeedItemType.Disbursed, $"Средства по договору {contract.Number} выданы",
+            $"{Money.FormatRub(disbursement.Amount)} зачислены на расчётный счёт {disbursement.Account}, платёжное поручение {disbursement.PaymentOrderNumber}. Первый платёж {Money.FormatRub(contract.MonthlyPayment)} через месяц.");
+        await feed.NotifyManagersAsync(application, FeedItemType.Disbursed, $"Выдача по договору {contract.Number} завершена",
+            $"{application.Company.Name}: {Money.FormatRub(disbursement.Amount)}, платёжное поручение {disbursement.PaymentOrderNumber}.", cancellationToken);
         return null;
     }
 

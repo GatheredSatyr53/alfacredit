@@ -10,7 +10,9 @@ namespace AlfaCredit.Api.Mapping;
 
 public static class ApplicationMapper
 {
-    public static ApplicationDto ToDto(this CreditApplication application, Actor actor) => new(
+    public static ApplicationDto ToDto(this CreditApplication application, Actor actor) => application.ToDto(actor, DateTimeOffset.UtcNow);
+
+    public static ApplicationDto ToDto(this CreditApplication application, Actor actor, DateTimeOffset now) => new(
         application.Id,
         application.Number,
         ApplicationStatusDto.From(application.Status),
@@ -27,6 +29,8 @@ public static class ApplicationMapper
         application.AvailableActions(actor.ActorType),
         application.LatestDecision?.ToDto(),
         application.CurrentOffer?.ToDto(),
+        application.CurrentContract?.ToSummaryDto(now),
+        application.CurrentDisbursement?.ToDto(),
         actor.IsBankEmployee ? application.LatestScoring?.ToDto() : null,
         actor.IsBankEmployee ? application.Checks.Select(ToDto).ToArray() : null,
         application.History.Select(ToDto).ToArray());

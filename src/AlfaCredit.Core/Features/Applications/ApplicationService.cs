@@ -1,8 +1,10 @@
 using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Core.Common;
 using AlfaCredit.Core.Domain.Applications;
+using AlfaCredit.Core.Domain.Contracts;
 using AlfaCredit.Core.Domain.Feed;
 using AlfaCredit.Core.Domain.Processing;
+using AlfaCredit.Core.Features.Contracts;
 using AlfaCredit.Core.Features.Feed;
 using AlfaCredit.Core.Features.Processing;
 using Microsoft.Extensions.Logging;
@@ -21,6 +23,7 @@ public sealed class ApplicationService(
     IUnitOfWork unitOfWork,
     TimeProvider clock,
     IOptions<ProcessingOptions> processingOptions,
+    IOptions<ContractOptions> contractOptions,
     ILogger<ApplicationService> logger)
 {
     public async Task<CreditApplication> CreateAsync(CreateApplicationCommand command, Actor actor, CancellationToken cancellationToken)
@@ -112,8 +115,13 @@ public sealed class ApplicationService(
     public async Task<CreditApplication> CancelAsync(Guid id, Actor actor, string? reason, CancellationToken cancellationToken)
     {
         var application = await GetForClientActionAsync(id, actor, "Отменить заявку может только клиент.", cancellationToken);
+        var wasSigning = application.Status == ApplicationStatus.ContractSigning;
         application.Cancel(actor.UserId, reason, clock.GetUtcNow());
-        feed.NotifyCompany(application, FeedItemType.StatusChanged, $"Заявка {application.Number} отменена", "Вы можете подать новую заявку в любой момент.");
+        feed.NotifyCompany(
+            application,
+            FeedItemType.StatusChanged,
+            wasSigning ? $"Подписание договора по заявке {application.Number} отменено" : $"Заявка {application.Number} отменена",
+            "Вы можете подать новую заявку в любой момент.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await NotifySafeAsync(application, cancellationToken);
         return application;
@@ -122,9 +130,26 @@ public sealed class ApplicationService(
     public async Task<CreditApplication> AcceptOfferAsync(Guid id, Actor actor, CancellationToken cancellationToken)
     {
         var application = await GetForClientActionAsync(id, actor, "Принять предложение может только клиент.", cancellationToken);
-        var offer = application.AcceptOffer(actor.UserId, clock.GetUtcNow());
-        feed.NotifyCompany(application, FeedItemType.ContractReady, $"Условия по заявке {application.Number} приняты",
-            $"Банк готовит договор на {Money.FormatRub(offer.Amount)} на {offer.TermMonths} мес. под {offer.InterestRate:0.##} % годовых.");
+        var now = clock.GetUtcNow();
+        var offer = application.AcceptOffer(actor.UserId, now);
+
+        var settings = contractOptions.Value;
+        var contract = LoanContract.Create(
+            application.Id,
+            offer,
+            settings.LenderName,
+            application.Company.Name,
+            application.Company.Inn,
+            BankAccounts.SettlementAccountFor(application.Company.Inn, application.Company.LegalForm),
+            now,
+            settings.SigningPeriod,
+            settings.CodeMaxAttempts);
+        application.AttachContract(contract);
+
+        // Номер договора выдаёт база, поэтому событие ленты создаётся после первого сохранения
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        feed.NotifyCompany(application, FeedItemType.ContractReady, $"Договор {contract.Number} готов к подписанию",
+            $"Условия: {Money.FormatRub(offer.Amount)} на {offer.TermMonths} мес. под {offer.InterestRate:0.##} % годовых, платёж {Money.FormatRub(offer.MonthlyPayment)} в месяц. Проверьте договор и подпишите его кодом подтверждения до {contract.SigningDeadline:dd.MM.yyyy}.");
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await NotifySafeAsync(application, cancellationToken);
         return application;

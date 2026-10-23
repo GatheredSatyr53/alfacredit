@@ -21,6 +21,8 @@ namespace AlfaCredit.Api.Contracts.Applications;
 /// <param name="AvailableActions">Действия, доступные текущему пользователю: cancel, acceptOffer, declineOffer и другие.</param>
 /// <param name="Decision">Последнее решение банка; null, пока решения нет.</param>
 /// <param name="Offer">Действующее предложение банка; null, если его нет.</param>
+/// <param name="Contract">Договор, сформированный после принятия предложения; null до этого момента. См. docs/completion-flow.md.</param>
+/// <param name="Disbursement">Последняя попытка выдачи средств; null, пока выдача не выполнялась.</param>
 /// <param name="Scoring">Результат скоринга; заполняется только для сотрудников банка.</param>
 /// <param name="Checks">Внешние проверки; заполняются только для сотрудников банка.</param>
 /// <param name="History">История статусов от создания к текущему.</param>
@@ -41,6 +43,8 @@ public sealed record ApplicationDto(
     IReadOnlyList<string> AvailableActions,
     DecisionDto? Decision,
     OfferDto? Offer,
+    ContractSummaryDto? Contract,
+    DisbursementDto? Disbursement,
     ScoringDto? Scoring,
     IReadOnlyList<ExternalCheckDto>? Checks,
     IReadOnlyList<ApplicationHistoryEntryDto> History);

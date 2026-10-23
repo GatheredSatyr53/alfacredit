@@ -24,6 +24,8 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
 
             modelBuilder.HasSequence("application_number_seq");
 
+            modelBuilder.HasSequence("contract_number_seq");
+
             modelBuilder.Entity("AlfaCredit.Core.Domain.Applications.ApplicationStatusHistory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -337,6 +339,210 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("company_members", (string)null);
+                });
+
+            modelBuilder.Entity("AlfaCredit.Core.Domain.Contracts.Disbursement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Account")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("account");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("application_id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<Guid>("ContractId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("contract_id");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("error");
+
+                    b.Property<string>("PaymentOrderNumber")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("payment_order_number");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.HasIndex("ContractId");
+
+                    b.ToTable("disbursements", (string)null);
+                });
+
+            modelBuilder.Entity("AlfaCredit.Core.Domain.Contracts.LoanContract", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("application_id");
+
+                    b.Property<string>("BorrowerInn")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("borrower_inn");
+
+                    b.Property<string>("BorrowerName")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("borrower_name");
+
+                    b.Property<int>("CodeAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("code_attempts");
+
+                    b.Property<DateTimeOffset?>("CodeExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("code_expires_at");
+
+                    b.Property<int>("CodeMaxAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("code_max_attempts");
+
+                    b.Property<DateTimeOffset?>("CodeRequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("code_requested_at");
+
+                    b.Property<string>("ConfirmationCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("confirmation_code");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DisbursementAccount")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("disbursement_account");
+
+                    b.Property<decimal>("InterestRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("interest_rate");
+
+                    b.Property<string>("LenderName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("lender_name");
+
+                    b.Property<decimal>("MonthlyPayment")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("monthly_payment");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("number")
+                        .HasDefaultValueSql("'KD-' || lpad(nextval('contract_number_seq')::text, 6, '0')");
+
+                    b.Property<Guid>("OfferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("offer_id");
+
+                    b.Property<string>("SignatureMethod")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("signature_method");
+
+                    b.Property<DateTimeOffset?>("SignedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("signed_at");
+
+                    b.Property<string>("SignedByName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("signed_by_name");
+
+                    b.Property<Guid?>("SignedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("signed_by_user_id");
+
+                    b.Property<DateTimeOffset>("SigningDeadline")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("signing_deadline");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("TermMonths")
+                        .HasColumnType("integer")
+                        .HasColumnName("term_months");
+
+                    b.Property<decimal>("TotalInterest")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_interest");
+
+                    b.Property<decimal>("TotalPayment")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_payment");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.HasIndex("Number")
+                        .IsUnique();
+
+                    b.HasIndex("OfferId");
+
+                    b.HasIndex("Status", "SigningDeadline");
+
+                    b.ToTable("loan_contracts", (string)null);
                 });
 
             modelBuilder.Entity("AlfaCredit.Core.Domain.Decisions.Decision", b =>
@@ -859,6 +1065,36 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("AlfaCredit.Core.Domain.Contracts.Disbursement", b =>
+                {
+                    b.HasOne("AlfaCredit.Core.Domain.Applications.CreditApplication", null)
+                        .WithMany("Disbursements")
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AlfaCredit.Core.Domain.Contracts.LoanContract", null)
+                        .WithMany()
+                        .HasForeignKey("ContractId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AlfaCredit.Core.Domain.Contracts.LoanContract", b =>
+                {
+                    b.HasOne("AlfaCredit.Core.Domain.Applications.CreditApplication", null)
+                        .WithMany("Contracts")
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AlfaCredit.Core.Domain.Decisions.Offer", null)
+                        .WithMany()
+                        .HasForeignKey("OfferId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AlfaCredit.Core.Domain.Decisions.Decision", b =>
                 {
                     b.HasOne("AlfaCredit.Core.Domain.Applications.CreditApplication", null)
@@ -919,7 +1155,11 @@ namespace AlfaCredit.Infrastructure.Persistence.Migrations
                 {
                     b.Navigation("Checks");
 
+                    b.Navigation("Contracts");
+
                     b.Navigation("Decisions");
+
+                    b.Navigation("Disbursements");
 
                     b.Navigation("History");
 

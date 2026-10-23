@@ -17,6 +17,8 @@ erDiagram
     credit_applications ||--o{ scoring_results : "скоринг"
     credit_applications ||--o{ decisions : "решения"
     decisions ||--o{ offers : "предложение"
+    offers ||--o{ loan_contracts : "договор"
+    loan_contracts ||--o{ disbursements : "выдача"
     credit_applications ||--o{ feed_items : "события"
     users ||--o{ feed_items : "лента"
 
@@ -151,6 +153,44 @@ erDiagram
         timestamptz expires_at
         varchar response "Pending | Accepted | Declined | Expired"
         timestamptz responded_at
+    }
+    loan_contracts {
+        uuid id PK
+        uuid application_id FK
+        uuid offer_id FK
+        varchar number UK "KD-000001, из последовательности"
+        varchar status "AwaitingSignature | Signed | Expired | Cancelled"
+        numeric amount
+        int term_months
+        numeric interest_rate
+        numeric monthly_payment
+        numeric total_payment
+        numeric total_interest
+        varchar lender_name
+        varchar borrower_name
+        varchar borrower_inn
+        varchar disbursement_account "20 цифр, синтетический"
+        timestamptz signing_deadline
+        timestamptz signed_at
+        uuid signed_by_user_id
+        varchar signed_by_name
+        varchar signature_method
+        varchar confirmation_code "действующий код, имитация SMS"
+        timestamptz code_expires_at
+        int code_attempts
+        int code_max_attempts
+    }
+    disbursements {
+        uuid id PK
+        uuid application_id FK
+        uuid contract_id FK
+        numeric amount
+        varchar account
+        varchar payment_order_number "из симулятора банковского ядра"
+        varchar status "Completed | Failed"
+        timestamptz requested_at
+        timestamptz completed_at
+        varchar error
     }
     feed_items {
         uuid id PK

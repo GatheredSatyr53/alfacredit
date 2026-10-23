@@ -14,6 +14,9 @@ public enum ProcessingStage
 
     /// <summary>Применение кредитной политики и решение.</summary>
     Decide = 4,
+
+    /// <summary>Выдача средств по подписанному договору.</summary>
+    Disburse = 5,
 }
 
 public enum ProcessingJobStatus

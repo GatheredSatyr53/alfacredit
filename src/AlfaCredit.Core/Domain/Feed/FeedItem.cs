@@ -12,6 +12,11 @@ public enum FeedItemType
     Disbursed = 7,
     Recommendation = 8,
     News = 9,
+
+    /// <summary>Код подтверждения для подписания договора (имитация SMS).</summary>
+    SigningCode = 10,
+
+    ContractSigned = 11,
 }
 
 /// <summary>Событие в персональной ленте пользователя: вместо email и SMS, которые запрещены кейсом.</summary>

@@ -18,6 +18,9 @@ public interface ICreditApplicationRepository
     /// <summary>Одобренные заявки, у которых истёк срок предложения, а клиент не ответил.</summary>
     Task<IReadOnlyList<CreditApplication>> ListWithExpiredOffersAsync(DateTimeOffset now, CancellationToken cancellationToken);
 
+    /// <summary>Заявки на подписании, у которых истёк срок подписания договора.</summary>
+    Task<IReadOnlyList<CreditApplication>> ListWithExpiredContractsAsync(DateTimeOffset now, CancellationToken cancellationToken);
+
     /// <summary>Заявка с компанией, продуктом и историей статусов; отслеживается контекстом для последующих изменений.</summary>
     Task<CreditApplication?> FindByIdAsync(Guid id, CancellationToken cancellationToken);
 

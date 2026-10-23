@@ -59,8 +59,8 @@ sequenceDiagram
     "termMonths": 12,
     "interestRate": 19.5,
     "monthlyPayment": 138593.06,
-    "totalPayment": 1663116.72,
-    "totalInterest": 163116.72,
+    "totalPayment": 1663116.74,
+    "totalInterest": 163116.74,
     "disbursementAccount": "40702810900000012345",
     "createdAt": "2026-10-23T09:00:00+00:00",
     "signingDeadline": "2026-10-28T09:00:00+00:00",
@@ -147,8 +147,8 @@ sequenceDiagram
   "termMonths": 12,
   "interestRate": 19.5,
   "monthlyPayment": 138593.06,
-  "totalPayment": 1663116.72,
-  "totalInterest": 163116.72,
+  "totalPayment": 1663116.74,
+  "totalInterest": 163116.74,
   "disbursementAccount": "40702810900000012345",
   "createdAt": "2026-10-23T09:00:00+00:00",
   "signingDeadline": "2026-10-28T09:00:00+00:00",
@@ -159,7 +159,7 @@ sequenceDiagram
   "schedule": [
     { "number": 1, "dueDate": "2026-11-23", "payment": 138593.06, "principal": 114218.06, "interest": 24375.00, "balance": 1385781.94 },
     { "number": 2, "dueDate": "2026-12-23", "payment": 138593.06, "principal": 116074.10, "interest": 22518.96, "balance": 1269707.84 },
-    { "number": 12, "dueDate": "2027-10-23", "payment": 138593.21, "principal": 136369.99, "interest": 2223.22, "balance": 0 }
+    { "number": 12, "dueDate": "2027-10-23", "payment": 138593.08, "principal": 136376.95, "interest": 2216.13, "balance": 0 }
   ],
   "documentUrl": "/api/applications/01a15975-f14b-7636-a356-687331e9eb8d/contract/document"
 }

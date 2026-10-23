@@ -222,10 +222,15 @@
     "id": "...", "amount": 1500000, "termMonths": 12, "interestRate": 19.5, "monthlyPayment": 138593.06,
     "expiresAt": "2026-10-27T17:47:02.1+00:00", "response": "Pending", "respondedAt": null
   },
+  "contract": null,
+  "disbursement": null,
   "scoring": null,
   "checks": null
 }
 ```
+
+После принятия предложения в ответе появляется `contract` (краткая карточка договора), после выдачи `disbursement`;
+поля и сценарий описаны в [completion-flow.md](completion-flow.md).
 
 | Тип решения | Статус заявки | Что в ответе |
 |---|---|---|
@@ -274,6 +279,17 @@
 Роль `Client`. Тело необязательно: `{ "reason": "Нашли предложение с меньшей ставкой" }`.
 Ответ 200: заявка со статусом `OfferDeclined` (терминальный). Истёкшее предложение закрывается системой автоматически.
 
+### Договор и выдача
+
+Полный контракт в [completion-flow.md](completion-flow.md). Кратко:
+
+| Метод | Путь | Роль | Назначение |
+|---|---|---|---|
+| GET | `/api/applications/{id}/contract` | все с доступом к заявке | договор: стороны, условия, подпись, график платежей; 404 до принятия предложения |
+| GET | `/api/applications/{id}/contract/document` | все с доступом к заявке | печатная форма договора, `text/html` |
+| POST | `/api/applications/{id}/contract/sign/request-code` | Client | код подтверждения в ленту событий (имитация SMS) и в `demoCode`; 409, если заявка не на подписании |
+| POST | `/api/applications/{id}/contract/sign` | Client | тело `{ "code": "483921" }`; верный код даёт статус `Signed`, затем воркер выполняет выдачу и статус становится `Disbursed`; неверный код даёт 400 с `errors.code` |
+
 ### GET /api/applications?status=Submitted&page=1&pageSize=20
 
 Страница заявок от новых к старым. Клиент видит свои компании, банк всё.
@@ -289,7 +305,7 @@
 
 ### POST /api/applications/{id}/cancel
 
-Роль `Client`. Доступно, пока банк не принял решение. Тело необязательно:
+Роль `Client`. Доступно, пока банк не принял решение, а также на этапе подписания договора (отказ от подписания). Тело необязательно:
 
 ```json
 { "reason": "Нашли другой источник" }
