@@ -112,6 +112,7 @@ Compose читает `.env` из корня (образец: `.env.example`). У
 | `SEED_DEMO_PASSWORD` | `Seed__DemoPassword` | `Demo123!` | Пароль демо-учёток |
 | `CORS_ORIGINS` | `Cors__Origins` | `http://localhost:5173,http://localhost:3000` | Разрешённые origin фронтенда, через запятую |
 | | `Swagger__Enabled` | `true` | Включить Swagger UI |
+| | `RateLimiting__LoginPermitLimit`, `RateLimiting__LoginWindowSeconds` | `20`, `60` | Лимит попыток входа с одного IP за окно |
 | `PROCESSING_STAGE_DELAY_SECONDS` | `Processing__StageDelaySeconds` | `2` | Пауза между этапами конвейера, чтобы движение заявки было видно; 0 для максимальной скорости |
 | | `Processing__WorkerCount` | `2` | Параллельных циклов воркера |
 | `SIMULATORS_FAILURE_RATE` | `Simulators__FailureRate` | `0` | Вероятность сбоя внешнего источника (0..1): показывает повторы и передачу менеджеру |

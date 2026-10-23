@@ -45,7 +45,9 @@ public static class ServiceCollectionExtensions
         services.AddSignalR();
         services.AddSingleton<IApplicationNotifier, SignalRApplicationNotifier>();
 
-        // Защита от перебора паролей: лимит попыток входа на один IP
+        // Защита от перебора паролей: лимит попыток входа на один IP (RateLimiting:LoginPermitLimit за LoginWindowSeconds)
+        var loginPermitLimit = Math.Max(1, configuration.GetValue<int?>("RateLimiting:LoginPermitLimit") ?? 20);
+        var loginWindow = TimeSpan.FromSeconds(Math.Max(1, configuration.GetValue<int?>("RateLimiting:LoginWindowSeconds") ?? 60));
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -54,8 +56,8 @@ public static class ServiceCollectionExtensions
                     httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                     _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 20,
-                        Window = TimeSpan.FromMinutes(1),
+                        PermitLimit = loginPermitLimit,
+                        Window = loginWindow,
                         QueueLimit = 0,
                     }));
         });
