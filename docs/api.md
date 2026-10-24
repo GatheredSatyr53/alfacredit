@@ -133,9 +133,11 @@
 { "companyId": "01a15975-ea5f-7a4f-863b-9035b3b8b2ca", "amount": 1500000, "purpose": "WorkingCapital", "needByDate": "2026-11-15", "termMonths": 12 }
 ```
 
-Ответ 200: `summary`, `disclaimer`, `options[]` (`productCode`, `termMonths`, `cost`, `affordability`, `funding`, `explanations`,
-`limitations`, `requirements`, `applyWith`), `unsuitable[]` (`productCode`, `reasons[]`). Тело `options[].applyWith`
-отправляется в `POST /api/applications` без изменений. Ошибки `400` по полям `amount`, `purpose`, `needByDate`, `termMonths`, `companyId`.
+Ответ 200: `calculationDate` (дата расчёта по Москве), `summary`, `disclaimer`, `options[]` (срочные продукты: `productCode`, `termMonths`,
+`cost`, `affordability`, `funding`, `suggestedAmount`, `explanations`, `limitations`, `requirements`, `applyWith`), `notCompared[]`
+(овердрафт и кредитная линия: по аннуитетной модели не сравниваются), `unsuitable[]` (`productCode`, `reasons[]`, `suggestedAmount`).
+Тело `options[].applyWith` отправляется в `POST /api/applications` без изменений. Ошибки `400` по полям `amount`, `purpose`,
+`needByDate`, `termMonths`, `companyId`. Расчёт не является одобрением и не гарантирует выдачу.
 
 ## Заявки
 
@@ -163,7 +165,7 @@
 | termMonths | int | да | 1..120, в границах продукта |
 | purpose | enum | да | `WorkingCapital`, `Equipment`, `Expansion`, `Refinancing`, `Other`; допустим для продукта |
 | purposeDescription | string | нет | до 1000 символов |
-| needByDate | date | нет | к какой дате нужны деньги, `YYYY-MM-DD`: не раньше сегодняшнего дня и не позже чем через 2 года; хранится и показывается, на обработку не влияет. Готовое тело заявки даёт `POST /api/financing/preview` (`options[].applyWith`) |
+| needByDate | date | нет | к какой дате нужны деньги, `YYYY-MM-DD`: не раньше сегодняшнего дня по Москве и не позже чем через 2 года; хранится как календарная дата без сдвига и показывается, на обработку не влияет. Готовое тело заявки даёт `POST /api/financing/preview` (`options[].applyWith`) |
 
 Ответ 201, заголовок `Location: /api/applications/{id}`:
 

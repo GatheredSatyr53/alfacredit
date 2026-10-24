@@ -89,6 +89,38 @@ public sealed class CreditApplicationTests
     }
 
     [Fact]
+    public void Need_by_date_is_validated_against_the_moscow_date_and_stored_without_shift()
+    {
+        // 23.10.2026 21:30 UTC: по Москве уже 24.10.2026, по UTC ещё 23.10
+        var lateEvening = new DateTimeOffset(2026, 10, 23, 21, 30, 0, TimeSpan.Zero);
+
+        var yesterdayInMoscow = Should.Throw<ValidationException>(() =>
+            CreditApplication.Create(TestData.Company(), TestData.Product(), UserId, 1_000_000, 12, LoanPurpose.WorkingCapital, null, lateEvening, new DateOnly(2026, 10, 23)));
+        yesterdayInMoscow.Errors.Keys.ShouldBe(["needByDate"]);
+
+        var todayInMoscow = CreditApplication.Create(TestData.Company(), TestData.Product(), UserId, 1_000_000, 12, LoanPurpose.WorkingCapital, null, lateEvening, new DateOnly(2026, 10, 24));
+        todayInMoscow.NeedByDate.ShouldBe(new DateOnly(2026, 10, 24), "календарная дата сохраняется как есть, без сдвига на часовой пояс");
+
+        // 23.10.2026 20:59 UTC: по Москве ещё 23.10, сегодняшняя дата принимается
+        var beforeMidnight = new DateTimeOffset(2026, 10, 23, 20, 59, 0, TimeSpan.Zero);
+        CreditApplication.Create(TestData.Company(), TestData.Product(), UserId, 1_000_000, 12, LoanPurpose.WorkingCapital, null, beforeMidnight, new DateOnly(2026, 10, 23))
+            .NeedByDate.ShouldBe(new DateOnly(2026, 10, 23));
+    }
+
+    [Fact]
+    public void Business_age_uses_the_moscow_date()
+    {
+        // Регистрация 24.10.2025: 23.10.2026 21:30 UTC в Москве уже 24.10.2026, то есть ровно 12 месяцев
+        var company = TestData.Company(registeredAt: new DateOnly(2025, 10, 24));
+        var product = TestData.Product(minBusinessAgeMonths: 12);
+        var lateEvening = new DateTimeOffset(2026, 10, 23, 21, 30, 0, TimeSpan.Zero);
+
+        Should.NotThrow(() => CreditApplication.Create(company, product, UserId, 1_000_000, 12, LoanPurpose.WorkingCapital, null, lateEvening));
+        Should.Throw<ValidationException>(() => CreditApplication.Create(company, product, UserId, 1_000_000, 12, LoanPurpose.WorkingCapital, null, lateEvening.AddHours(-1)))
+            .Errors.Keys.ShouldBe(["companyId"]);
+    }
+
+    [Fact]
     public void Create_accepts_today_and_the_last_day_of_the_window_as_need_by_date()
     {
         var today = DateOnly.FromDateTime(TestData.Now.UtcDateTime);

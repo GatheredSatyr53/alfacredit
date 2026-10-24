@@ -28,25 +28,31 @@ public sealed class FinancingEndpointsTests(ApiFactory factory)
         preview.GetProperty("request").GetProperty("needByDate").GetString().ShouldBe(needByDate);
         preview.GetProperty("request").GetProperty("daysUntilNeeded").GetInt32().ShouldBe(30);
         preview.GetProperty("request").GetProperty("purposeTitle").GetString().ShouldBe("Пополнение оборотных средств");
-        preview.GetProperty("summary").GetString()!.ShouldStartWith("Подходят 4 варианта из 5.");
-        preview.GetProperty("disclaimer").GetString()!.ShouldContain("Заявка не создана");
+        preview.GetProperty("summary").GetString()!.ShouldStartWith("Подходят 2 варианта из 3 сравниваемых продуктов. Рекомендуем «Оборотный кредит»");
+        preview.GetProperty("disclaimer").GetString()!.ShouldContain("не гарантирует выдачу");
+        preview.GetProperty("calculationDate").GetString().ShouldBe(DateOnly.FromDateTime(DateTime.UtcNow.AddHours(3)).ToString("yyyy-MM-dd"));
 
         var options = preview.GetProperty("options").EnumerateArray().ToList();
-        options.Select(o => o.GetProperty("productCode").GetString()).ShouldBe(["credit-line", "working-capital", "overdraft", "express"]);
+        options.Select(o => o.GetProperty("productCode").GetString()).ShouldBe(["working-capital", "express"]);
+        preview.GetProperty("notCompared").EnumerateArray().Select(n => n.GetProperty("productCode").GetString()).ShouldBe(["overdraft", "credit-line"]);
+        preview.GetProperty("notCompared")[0].GetProperty("reason").GetProperty("code").GetString().ShouldBe("limit_product");
         var best = options[0];
         best.GetProperty("isRecommended").GetBoolean().ShouldBeTrue();
         best.GetProperty("termSuggested").GetBoolean().ShouldBeFalse();
-        best.GetProperty("cost").GetProperty("monthlyPayment").GetDecimal().ShouldBe(137_877.18m);
-        best.GetProperty("cost").GetProperty("totalInterest").GetDecimal().ShouldBe(154_526.12m);
-        best.GetProperty("cost").GetProperty("maxInterestRate").GetDecimal().ShouldBe(21.5m);
+        best.GetProperty("cost").GetProperty("monthlyPayment").GetDecimal().ShouldBe(138_593.06m);
+        best.GetProperty("cost").GetProperty("totalInterest").GetDecimal().ShouldBe(163_116.74m);
+        best.GetProperty("cost").GetProperty("maxInterestRate").GetDecimal().ShouldBe(22.5m);
         best.GetProperty("affordability").GetProperty("level").GetString().ShouldBe("Moderate");
         best.GetProperty("affordability").GetProperty("debtLoad").GetDecimal().ShouldBe(0.48m);
+        best.GetProperty("affordability").GetProperty("profitBasis").GetString().ShouldBe("NetProfit");
         best.GetProperty("funding").GetProperty("decisionPath").GetString().ShouldBe("Auto");
         best.GetProperty("funding").GetProperty("inTime").GetBoolean().ShouldBeTrue();
-        best.GetProperty("explanations").EnumerateArray().Select(e => e.GetProperty("code").GetString()).ShouldContain("cheapest");
+        best.GetProperty("funding").GetProperty("explanation").GetString()!.ShouldEndWith("Ориентир не является одобрением.");
+        best.GetProperty("suggestedAmount").ValueKind.ShouldBe(JsonValueKind.Null);
+        best.GetProperty("explanations").EnumerateArray().Select(e => e.GetProperty("code").GetString()).ShouldBe(["product_about", "no_collateral", "auto_decision_possible", "data_prefilled", "checks_automatic", "cheapest"]);
         best.GetProperty("limitations").EnumerateArray().Select(e => e.GetProperty("code").GetString()).ShouldBe(["rate_depends_on_risk"]);
-        best.GetProperty("requirements").EnumerateArray().Select(e => e.GetProperty("code").GetString()).ShouldBe(["credit_history_consent"]);
-        options[1].GetProperty("cost").GetProperty("monthlyPayment").GetDecimal().ShouldBe(138_593.06m);
+        best.GetProperty("requirements").GetArrayLength().ShouldBe(0);
+        options[1].GetProperty("cost").GetProperty("monthlyPayment").GetDecimal().ShouldBe(141_114.48m);
         preview.GetProperty("unsuitable").EnumerateArray().Single().GetProperty("productCode").GetString().ShouldBe("investment");
 
         // Preview ничего не создал
@@ -62,7 +68,7 @@ public sealed class FinancingEndpointsTests(ApiFactory factory)
 
         var application = await client.GetFromJsonAsync<JsonElement>($"/api/applications/{id}");
         application.GetProperty("needByDate").GetString().ShouldBe(needByDate);
-        application.GetProperty("product").GetProperty("code").GetString().ShouldBe("credit-line");
+        application.GetProperty("product").GetProperty("code").GetString().ShouldBe("working-capital");
         application.GetProperty("termMonths").GetInt32().ShouldBe(12);
 
         var list = await client.GetFromJsonAsync<JsonElement>("/api/applications?pageSize=50");
@@ -92,7 +98,8 @@ public sealed class FinancingEndpointsTests(ApiFactory factory)
         var suggested = await good.PostAsJsonAsync("/api/financing/preview", new { companyId = goodCompany, amount = 1_500_000, purpose = "WorkingCapital", needByDate = Today(30) });
         suggested.StatusCode.ShouldBe(HttpStatusCode.OK);
         var options = (await suggested.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("options").EnumerateArray().ToList();
-        options.ShouldAllBe(o => o.GetProperty("termSuggested").GetBoolean() && o.GetProperty("termMonths").GetInt32() >= 11 && o.GetProperty("termMonths").GetInt32() <= 12);
+        options.Select(o => (o.GetProperty("productCode").GetString(), o.GetProperty("termMonths").GetInt32(), o.GetProperty("termSuggested").GetBoolean()))
+            .ShouldBe([("working-capital", 12, true), ("express", 12, true)]);
         options.ShouldAllBe(o => o.GetProperty("affordability").GetProperty("level").GetString() == "Moderate");
 
         using var young = await factory.CreateClient().LoginAsAsync("client_new");
@@ -102,10 +109,35 @@ public sealed class FinancingEndpointsTests(ApiFactory factory)
         none.StatusCode.ShouldBe(HttpStatusCode.OK);
         var preview = await none.Content.ReadFromJsonAsync<JsonElement>();
         preview.GetProperty("options").GetArrayLength().ShouldBe(0);
-        preview.GetProperty("unsuitable").GetArrayLength().ShouldBe(5);
+        preview.GetProperty("notCompared").GetArrayLength().ShouldBe(2);
+        preview.GetProperty("unsuitable").GetArrayLength().ShouldBe(3);
         preview.GetProperty("summary").GetString()!.ShouldStartWith("Подходящих продуктов нет.");
         preview.GetProperty("unsuitable").EnumerateArray()
             .ShouldAllBe(u => u.GetProperty("reasons").EnumerateArray().Any(r => r.GetProperty("code").GetString() == "business_too_young"));
+    }
+
+    [DockerFact]
+    public async Task Large_amount_gets_a_structured_smaller_amount_and_limit_products_stay_applicable_through_the_catalog()
+    {
+        using var client = await factory.CreateClient().LoginAsAsync("client_manual");
+        var companyId = await client.GetFirstCompanyIdAsync();
+
+        var response = await client.PostAsJsonAsync("/api/financing/preview", new { companyId, amount = 8_000_000, purpose = "WorkingCapital", needByDate = Today(30), termMonths = 24 });
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var preview = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var option = preview.GetProperty("options").EnumerateArray().Single();
+        option.GetProperty("productCode").GetString().ShouldBe("working-capital");
+        option.GetProperty("funding").GetProperty("decisionPath").GetString().ShouldBe("ManualReview");
+        var suggestion = option.GetProperty("suggestedAmount");
+        suggestion.GetProperty("amount").GetDecimal().ShouldBe(5_000_000);
+        suggestion.GetProperty("basis").GetString().ShouldBe("AutoApprovalLimit");
+        suggestion.GetProperty("text").GetString()!.ShouldContain("5 000 000 ₽");
+        preview.GetProperty("unsuitable").EnumerateArray().Single(u => u.GetProperty("productCode").GetString() == "express")
+            .GetProperty("suggestedAmount").ValueKind.ShouldBe(JsonValueKind.Null, "экспресс-кредиту мешает не только сумма, но и срок");
+
+        // Кредитная линия не сравнивается, но по-прежнему оформляется обычной заявкой из каталога
+        var created = await client.PostAsJsonAsync("/api/applications", new { companyId, productCode = "credit-line", amount = 8_000_000, termMonths = 24, purpose = "WorkingCapital" });
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
     [DockerFact]
@@ -146,7 +178,7 @@ public sealed class FinancingEndpointsTests(ApiFactory factory)
         using var manager = await factory.CreateClient().LoginAsAsync("manager");
         var response = await manager.PostAsJsonAsync("/api/financing/preview", body);
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("options").GetArrayLength().ShouldBe(4);
+        (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("options").GetArrayLength().ShouldBe(2);
 
         using var anonymous = factory.CreateClient();
         (await anonymous.PostAsJsonAsync("/api/financing/preview", body)).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);

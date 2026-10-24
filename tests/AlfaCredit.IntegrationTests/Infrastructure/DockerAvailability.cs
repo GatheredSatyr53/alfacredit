@@ -1,11 +1,14 @@
 namespace AlfaCredit.IntegrationTests.Infrastructure;
 
-/// <summary>Интеграционные тесты поднимают PostgreSQL в контейнере. Без Docker они пропускаются, а не падают.</summary>
+/// <summary>
+/// Интеграционные тесты поднимают PostgreSQL в контейнере или используют внешний сервер из переменной
+/// ALFACREDIT_TEST_POSTGRES (см. <see cref="TestDatabase"/>). Без того и другого они пропускаются, а не падают.
+/// </summary>
 internal static class DockerAvailability
 {
-    public static bool IsAvailable { get; } = Detect();
+    public static bool IsAvailable { get; } = TestDatabase.ExternalAdminConnectionString is not null || Detect();
 
-    public static string SkipReason => "Docker недоступен: интеграционные тесты требуют контейнер PostgreSQL (Testcontainers).";
+    public static string SkipReason => $"Docker недоступен: интеграционные тесты требуют контейнер PostgreSQL (Testcontainers) или строку подключения в {TestDatabase.EnvironmentVariable}.";
 
     private static bool Detect()
     {

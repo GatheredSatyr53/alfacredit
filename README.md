@@ -82,6 +82,8 @@ docker compose up -d db scoring              # PostgreSQL и сервис ско
 dotnet restore
 dotnet run --project src/AlfaCredit.Api      # http://localhost:5080/swagger
 dotnet test                                  # unit + интеграционные (последние требуют Docker, иначе пропускаются)
+# интеграционные тесты без Docker, на отдельной базе внешнего PostgreSQL (нужно право CREATEDB):
+ALFACREDIT_TEST_POSTGRES="Host=localhost;Username=alfacredit;Password=alfacredit;Database=postgres" dotnet test tests/AlfaCredit.IntegrationTests
 ```
 
 При `dotnet run` по умолчанию работает встроенная модель (`Scoring:Mode` = `Rules` в `appsettings.json`).
@@ -165,9 +167,11 @@ Seed повторяем: при каждом старте добавляются
 4. `GET /api/companies`: ООО «Ромашка», скопировать `id`.
 5. `POST /api/financing/preview` с телом
    `{"companyId": "<id>", "amount": 1500000, "purpose": "WorkingCapital", "needByDate": "<дата через 3 недели>", "termMonths": 12}`:
-   ответ `200` с четырьмя вариантами (первый `isRecommended`: «Кредитная линия», платёж 137 877,18 ₽, переплата 154 526,12 ₽,
-   деньги ориентировочно на следующий рабочий день), «Инвестиционный кредит» в `unsuitable` с причиной по цели. Заявка при этом не создаётся.
-   Без `termMonths` срок подбирается (11–12 мес.: самый короткий без штрафа за нагрузку в скоринге), под `client_new` ответ без вариантов с объяснением «возраст бизнеса».
+   ответ `200` с двумя вариантами (первый `isRecommended`: «Оборотный кредит», платёж 138 593,06 ₽, переплата 163 116,74 ₽,
+   при одобрении деньги ориентировочно на следующий рабочий день), «Овердрафт» и «Кредитная линия» в `notCompared` (продукты с лимитом
+   не сравниваются по аннуитетной модели), «Инвестиционный кредит» в `unsuitable` с причиной по цели. Заявка при этом не создаётся.
+   Без `termMonths` срок подбирается (12 мес.: самый короткий без штрафа за нагрузку в скоринге), под `client_new` ответ без вариантов
+   с объяснением «возраст бизнеса», под `client_manual` на 8 000 000 ₽ в `suggestedAmount` приходит 5 000 000 ₽ (лимит автоматического решения).
 6. `POST /api/applications` с телом
    `{"companyId": "<id>", "productCode": "working-capital", "amount": 1500000, "termMonths": 12, "purpose": "WorkingCapital", "needByDate": "<та же дата>"}`
    (или `options[].applyWith` из предыдущего шага): ответ `201` с `id` и номером `AC-000001`; `needByDate` необязательно.
@@ -229,7 +233,7 @@ Seed повторяем: при каждом старте добавляются
 | GET | `/api/products`, `/api/products/{code}` | все | Каталог кредитных продуктов |
 | GET | `/api/companies`, `/api/companies/{id}` | по токену | Компании клиента (банк видит все) |
 | GET | `/api/applications` | по токену | Список заявок с фильтром по статусу и пагинацией |
-| POST | `/api/financing/preview` | по токену | Предварительный подбор «нужны деньги к дате»: варианты, стоимость, нагрузка, ориентир даты, причины отказа; заявку не создаёт ([docs/financing-preview.md](docs/financing-preview.md)) |
+| POST | `/api/financing/preview` | по токену | Предварительный подбор «нужны деньги к дате»: срочные продукты с платежом, переплатой, нагрузкой, ориентиром даты и меньшей суммой для пересчёта; продукты с лимитом и неподходящие с причинами; заявку не создаёт ([docs/financing-preview.md](docs/financing-preview.md)) |
 | POST | `/api/applications` | Client | Подать заявку (необязательно `needByDate`); запускает конвейер; `400` с ошибками по полям |
 | GET | `/api/applications/{id}` | по токену | Заявка: статус, решение, предложение, действия, история; банку также скоринг и проверки |
 | POST | `/api/applications/{id}/offer/accept` | Client | Принять предложение банка |

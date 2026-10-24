@@ -1297,8 +1297,9 @@
         "properties": {
           "monthlyProfit": {
             "type": "number",
-            "description": "Месячная прибыль, по которой считается нагрузка, ₽.",
-            "format": "double"
+            "description": "Месячная прибыль, по которой считается нагрузка, ₽; null, если данных недостаточно.",
+            "format": "double",
+            "nullable": true
           },
           "currentDebtPayments": {
             "type": "number",
@@ -1307,7 +1308,7 @@
           },
           "debtLoad": {
             "type": "number",
-            "description": "(текущие платежи + новый платёж) / месячная прибыль, не больше 9.99; null, если прибыли нет.",
+            "description": "(текущие платежи + новый платёж) / месячная прибыль, не больше 9.99; null, если прибыли нет или данных недостаточно.",
             "format": "double",
             "nullable": true
           },
@@ -1324,6 +1325,34 @@
         },
         "additionalProperties": false,
         "description": "«Потяну ли платёж»: кредитная нагрузка по формуле сервиса скоринга."
+      },
+      "AmountSuggestionBasis": {
+        "enum": [
+          "ProductMaximum",
+          "AutoApprovalLimit",
+          "RevenueShare",
+          "DebtLoad"
+        ],
+        "type": "string"
+      },
+      "AmountSuggestionDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Сумма, ₽: наименьшая из действующих границ, округлена вниз до 10 000 ₽ для границы по нагрузке.",
+            "format": "double"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/AmountSuggestionBasis"
+          },
+          "text": {
+            "type": "string",
+            "description": "Обоснование для клиента."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Меньшая сумма для повторного расчёта."
       },
       "ApplicationCompanyDto": {
         "type": "object",
@@ -2136,7 +2165,8 @@
           "Comfortable",
           "Moderate",
           "Elevated",
-          "High"
+          "High",
+          "InsufficientData"
         ],
         "type": "string"
       },
@@ -2471,26 +2501,29 @@
           "funding": {
             "$ref": "#/components/schemas/FundingEstimateDto"
           },
+          "suggestedAmount": {
+            "$ref": "#/components/schemas/AmountSuggestionDto"
+          },
           "explanations": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PreviewNoteDto"
             },
-            "description": "Почему вариант подходит: product_about, no_collateral, auto_decision, term_suggested, cheapest, data_prefilled."
+            "description": "Почему вариант подходит: product_about, no_collateral, auto_decision_possible, term_suggested, data_prefilled, checks_automatic, cheapest."
           },
           "limitations": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PreviewNoteDto"
             },
-            "description": "Что может изменить условия: rate_depends_on_risk, manual_review_amount, collateral_required, amount_may_be_reduced, expense_ratio_high, elevated_debt_load, high_debt_load, deadline_missed."
+            "description": "Что может изменить условия: rate_depends_on_risk, manual_review_amount, collateral_required, amount_may_be_reduced, expense_ratio_high, affordability_unknown, elevated_debt_load, high_debt_load, deadline_missed."
           },
           "requirements": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PreviewNoteDto"
             },
-            "description": "Что нужно для оформления: credit_history_consent, financials_required, collateral_documents."
+            "description": "Что действительно потребуется: financials_required, collateral_documents."
           },
           "applyWith": {
             "$ref": "#/components/schemas/ApplyWithDto"
@@ -2507,6 +2540,11 @@
             "description": "Момент расчёта (UTC); ответ не сохраняется.",
             "format": "date-time"
           },
+          "calculationDate": {
+            "type": "string",
+            "description": "Календарная дата расчёта по Москве: от неё считаются возраст бизнеса, дни до нужной даты и ориентиры сроков.",
+            "format": "date"
+          },
           "company": {
             "$ref": "#/components/schemas/PreviewCompanyDto"
           },
@@ -2519,7 +2557,7 @@
           },
           "disclaimer": {
             "type": "string",
-            "description": "Оговорка под расчётом, выводится как есть."
+            "description": "Оговорка под расчётом, выводится как есть: расчёт не является одобрением и не гарантирует выдачу."
           },
           "options": {
             "type": "array",
@@ -2527,6 +2565,13 @@
               "$ref": "#/components/schemas/FinancingOptionDto"
             },
             "description": "Подходящие продукты: сначала те, что успевают к дате, затем по возрастанию переплаты; первый помечен isRecommended."
+          },
+          "notCompared": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotComparedProductDto"
+            },
+            "description": "Продукты с лимитом (овердрафт, кредитная линия): по аннуитетной модели не сравниваются, оформляются отдельной заявкой."
           },
           "unsuitable": {
             "type": "array",
@@ -2537,7 +2582,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Результат предварительного подбора: подходящие варианты с расчётом и продукты, которые не подходят, с причинами. Контракт: docs/financing-preview.md."
+        "description": "Результат предварительного подбора: подходящие срочные продукты с расчётом, продукты с лимитом вне сравнения и продукты, которые не подходят, с причинами. Контракт: docs/financing-preview.md."
       },
       "FinancingPreviewRequest": {
         "required": [
@@ -2591,7 +2636,7 @@
           },
           "businessDays": {
             "type": "integer",
-            "description": "Рабочих дней от даты расчёта до денег на счёте.",
+            "description": "Рабочих дней от даты расчёта до денег на счёте при положительном решении.",
             "format": "int32"
           },
           "expectedDate": {
@@ -2609,7 +2654,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "«Успею ли к дате»: ориентир получения денег."
+        "description": "«Успею ли к дате»: ориентир получения денег при положительном решении. Не является одобрением."
       },
       "FundingPath": {
         "enum": [
@@ -2681,6 +2726,27 @@
         },
         "additionalProperties": false,
         "description": "Результат успешного входа."
+      },
+      "NotComparedProductDto": {
+        "type": "object",
+        "properties": {
+          "productCode": {
+            "type": "string",
+            "description": "Код продукта."
+          },
+          "productName": {
+            "type": "string",
+            "description": "Название продукта."
+          },
+          "productType": {
+            "$ref": "#/components/schemas/ProductType"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/PreviewNoteDto"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Продукт с лимитом вне сравнения: овердрафт, кредитная линия."
       },
       "OfferDto": {
         "type": "object",
@@ -2955,8 +3021,7 @@
       "ProfitBasis": {
         "enum": [
           "NetProfit",
-          "RevenueMinusExpenses",
-          "RevenueEstimate"
+          "RevenueMinusExpenses"
         ],
         "type": "string"
       },
@@ -3189,16 +3254,22 @@
         "type": "object",
         "properties": {
           "productCode": {
-            "type": "string"
+            "type": "string",
+            "description": "Код продукта."
           },
           "productName": {
-            "type": "string"
+            "type": "string",
+            "description": "Название продукта."
           },
           "reasons": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PreviewNoteDto"
-            }
+            },
+            "description": "Причины по кодам."
+          },
+          "suggestedAmount": {
+            "$ref": "#/components/schemas/AmountSuggestionDto"
           }
         },
         "additionalProperties": false,
