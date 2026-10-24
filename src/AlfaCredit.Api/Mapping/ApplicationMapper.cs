@@ -70,6 +70,8 @@ public static class ApplicationMapper
         offer.TermMonths,
         offer.InterestRate,
         offer.MonthlyPayment,
+        offer.TotalPayment,
+        offer.TotalInterest,
         offer.ExpiresAt,
         offer.Response,
         offer.RespondedAt);

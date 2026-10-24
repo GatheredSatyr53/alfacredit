@@ -43,6 +43,26 @@ public sealed class LoanMathTests
         schedule.Sum(r => r.Interest).ShouldBeInRange(160_000m, 170_000m);
     }
 
+    [Theory]
+    [InlineData(1_500_000, 19.5, 12, 1_663_116.74, 163_116.74)]
+    [InlineData(2_400_000, 22.5, 24, 3_002_423.02, 602_423.02)]
+    [InlineData(300_000, 0, 6, 300_000, 0)]
+    public void Totals_match_the_schedule_and_do_not_depend_on_payment_dates(decimal amount, decimal rate, int term, decimal totalPayment, decimal totalInterest)
+    {
+        var totals = LoanMath.Totals(amount, rate, term);
+
+        totals.TotalPayment.ShouldBe(totalPayment);
+        totals.TotalInterest.ShouldBe(totalInterest);
+        totals.TotalPayment.ShouldBe(amount + totals.TotalInterest);
+
+        foreach (var first in new[] { new DateOnly(2026, 11, 23), new DateOnly(2027, 1, 31), new DateOnly(2026, 2, 28) })
+        {
+            var schedule = LoanMath.Schedule(amount, rate, term, first);
+            schedule.Sum(r => r.Payment).ShouldBe(totals.TotalPayment);
+            schedule.Sum(r => r.Interest).ShouldBe(totals.TotalInterest);
+        }
+    }
+
     [Fact]
     public void Empty_schedule_for_zero_amount_and_guard_for_term()
     {

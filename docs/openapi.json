@@ -2776,6 +2776,16 @@
             "description": "Ежемесячный платёж, ₽.",
             "format": "double"
           },
+          "totalPayment": {
+            "type": "number",
+            "description": "Сумма всех платежей по графику, ₽.",
+            "format": "double"
+          },
+          "totalInterest": {
+            "type": "number",
+            "description": "Переплата за весь срок, ₽.",
+            "format": "double"
+          },
           "expiresAt": {
             "type": "string",
             "description": "До какого момента действует (UTC).",
@@ -2792,7 +2802,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Предложение банка по одобренной заявке."
+        "description": "Предложение банка по одобренной заявке: фактические условия, которые клиент принимает или отклоняет.\nПлатёж, сумма всех платежей и переплата посчитаны по аннуитетному графику и повторяются в договоре без изменений."
       },
       "OfferResponse": {
         "enum": [

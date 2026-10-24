@@ -242,6 +242,7 @@
   },
   "offer": {
     "id": "...", "amount": 1500000, "termMonths": 12, "interestRate": 19.5, "monthlyPayment": 138593.06,
+    "totalPayment": 1663116.74, "totalInterest": 163116.74,
     "expiresAt": "2026-10-27T17:47:02.1+00:00", "response": "Pending", "respondedAt": null
   },
   "contract": null,
@@ -250,6 +251,19 @@
   "checks": null
 }
 ```
+
+`offer` — фактические условия, которые клиент принимает или отклоняет; карточка решения до принятия строится по нему:
+
+| Поле `offer` | Что означает |
+|---|---|
+| `amount`, `termMonths`, `interestRate` | одобренная сумма, ₽, срок, мес., и годовая ставка, %; при `ApprovedWithConditions` отличаются от запрошенных |
+| `monthlyPayment` | аннуитетный ежемесячный платёж, ₽ |
+| `totalPayment`, `totalInterest` | сумма всех платежей по графику и переплата за весь срок, ₽; считаются по тем же правилам, что и в договоре, поэтому после принятия `contract.totalPayment` и `contract.totalInterest` равны им |
+| `expiresAt` | до какого момента предложение действует (7 дней); после него `response` = `Expired`, заявка закрывается |
+| `response`, `respondedAt` | `Pending`, `Accepted`, `Declined` или `Expired` и момент ответа клиента |
+
+Цифры `cost` из предварительного подбора (`POST /api/financing/preview`) — ориентир по базовой ставке продукта до проверки
+заявки; фактические условия только здесь, в `offer`: ставка зависит от оценки риска, сумма может быть снижена.
 
 После принятия предложения в ответе появляется `contract` (краткая карточка договора), после выдачи `disbursement`;
 поля и сценарий описаны в [completion-flow.md](completion-flow.md).

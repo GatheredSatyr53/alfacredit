@@ -36,6 +36,8 @@ public sealed class ContractEndpointsTests(ApiFactory factory)
         summary.GetProperty("interestRate").GetDecimal().ShouldBe(19.5m);
         summary.GetProperty("monthlyPayment").GetDecimal().ShouldBe(138_593.06m);
         summary.GetProperty("totalInterest").GetDecimal().ShouldBeGreaterThan(0);
+        summary.GetProperty("totalPayment").GetDecimal().ShouldBe(approved.GetProperty("offer").GetProperty("totalPayment").GetDecimal(), "итоги договора равны итогам предложения до принятия");
+        summary.GetProperty("totalInterest").GetDecimal().ShouldBe(approved.GetProperty("offer").GetProperty("totalInterest").GetDecimal());
         summary.GetProperty("disbursementAccount").GetString()!.Length.ShouldBe(20);
         summary.GetProperty("signing").GetProperty("canRequestCode").GetBoolean().ShouldBeTrue();
         summary.GetProperty("signing").GetProperty("codeRequestedAt").ValueKind.ShouldBe(JsonValueKind.Null);

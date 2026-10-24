@@ -9,6 +9,11 @@ namespace AlfaCredit.Core.Common;
 /// <param name="Balance">Остаток основного долга после платежа, ₽.</param>
 public sealed record ScheduleRow(int Number, DateOnly DueDate, decimal Payment, decimal Principal, decimal Interest, decimal Balance);
 
+/// <summary>Итоги по аннуитетному графику.</summary>
+/// <param name="TotalPayment">Сумма всех платежей, ₽.</param>
+/// <param name="TotalInterest">Переплата за весь срок, ₽.</param>
+public sealed record LoanTotals(decimal TotalPayment, decimal TotalInterest);
+
 public static class LoanMath
 {
     /// <summary>Аннуитетный ежемесячный платёж по годовой ставке в процентах.</summary>
@@ -28,6 +33,16 @@ public static class LoanMath
         var monthlyRate = (double)annualRatePercent / 100d / 12d;
         var factor = monthlyRate / (1 - Math.Pow(1 + monthlyRate, -termMonths));
         return Math.Round(amount * (decimal)factor, 2);
+    }
+
+    /// <summary>
+    /// Сумма всех платежей и переплата по аннуитетному графику. Даты платежей на суммы не влияют, поэтому итоги
+    /// предложения и договора на одних условиях совпадают.
+    /// </summary>
+    public static LoanTotals Totals(decimal amount, decimal annualRatePercent, int termMonths)
+    {
+        var schedule = Schedule(amount, annualRatePercent, termMonths, DateOnly.MinValue);
+        return new(schedule.Sum(r => r.Payment), schedule.Sum(r => r.Interest));
     }
 
     /// <summary>

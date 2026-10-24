@@ -29,6 +29,8 @@ internal sealed class OfferConfiguration : IEntityTypeConfiguration<Offer>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Ignore(o => o.IsPending);
+        builder.Ignore(o => o.TotalPayment);
+        builder.Ignore(o => o.TotalInterest);
 
         builder.HasIndex(o => o.ApplicationId);
         builder.HasIndex(o => new { o.Response, o.ExpiresAt });
