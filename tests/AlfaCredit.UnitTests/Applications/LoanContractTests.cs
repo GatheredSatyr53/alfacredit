@@ -24,8 +24,9 @@ public sealed class LoanContractTests
         contract.MonthlyPayment.ShouldBe(138_593.06m);
         contract.TotalInterest.ShouldBeInRange(160_000m, 170_000m);
         contract.TotalPayment.ShouldBe(contract.Amount + contract.TotalInterest);
-        contract.TotalPayment.ShouldBe(application.CurrentOffer!.TotalPayment, "договор повторяет итоги принятого предложения");
-        contract.TotalInterest.ShouldBe(application.CurrentOffer.TotalInterest);
+        var offerTotals = application.CurrentOffer!.Totals(application.Product.Type).ShouldNotBeNull();
+        contract.TotalPayment.ShouldBe(offerTotals.TotalPayment, "договор срочного кредита повторяет итоги принятого предложения");
+        contract.TotalInterest.ShouldBe(offerTotals.TotalInterest);
         contract.SigningDeadline.ShouldBe(TestData.Now.AddHours(1).AddDays(5));
         contract.DisbursementAccount.Length.ShouldBe(20);
         contract.DisbursementAccount.ShouldStartWith("40702810");

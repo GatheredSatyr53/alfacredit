@@ -29,7 +29,7 @@ public static class ApplicationMapper
         application.UpdatedAt,
         application.AvailableActions(actor.ActorType),
         application.LatestDecision?.ToDto(),
-        application.CurrentOffer?.ToDto(),
+        application.CurrentOffer?.ToDto(application.Product.Type),
         application.CurrentContract?.ToSummaryDto(now),
         application.CurrentDisbursement?.ToDto(),
         actor.IsBankEmployee ? application.LatestScoring?.ToDto() : null,
@@ -64,17 +64,21 @@ public static class ApplicationMapper
         decision.Reasons.Select(r => new DecisionReasonDto(r.Code, r.Title, r.ClientExplanation)).ToArray(),
         decision.DecidedAt);
 
-    public static OfferDto ToDto(this Offer offer) => new(
-        offer.Id,
-        offer.Amount,
-        offer.TermMonths,
-        offer.InterestRate,
-        offer.MonthlyPayment,
-        offer.TotalPayment,
-        offer.TotalInterest,
-        offer.ExpiresAt,
-        offer.Response,
-        offer.RespondedAt);
+    public static OfferDto ToDto(this Offer offer, ProductType productType)
+    {
+        var totals = offer.Totals(productType);
+        return new(
+            offer.Id,
+            offer.Amount,
+            offer.TermMonths,
+            offer.InterestRate,
+            offer.MonthlyPayment,
+            totals?.TotalPayment,
+            totals?.TotalInterest,
+            offer.ExpiresAt,
+            offer.Response,
+            offer.RespondedAt);
+    }
 
     public static ScoringDto ToDto(this ScoringResult scoring) => new(
         scoring.Score,

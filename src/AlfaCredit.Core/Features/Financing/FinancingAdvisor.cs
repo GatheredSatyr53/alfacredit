@@ -34,7 +34,7 @@ public sealed class FinancingAdvisor(FinancingPreviewOptions options, DecisionPo
     private readonly DecisionPolicyOptions _policy = policy ?? throw new ArgumentNullException(nameof(policy));
 
     /// <summary>Сравниваются только срочные продукты с аннуитетным графиком; овердрафт и кредитная линия оформляются отдельной заявкой.</summary>
-    public static bool IsComparable(ProductType type) => type is ProductType.WorkingCapital or ProductType.Investment or ProductType.Express;
+    public static bool IsComparable(ProductType type) => type.HasAnnuitySchedule();
 
     public FinancingPreview Build(Company company, IReadOnlyList<CreditProduct> products, FinancingPreviewQuery query, DateTimeOffset now)
     {

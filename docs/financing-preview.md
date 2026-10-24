@@ -681,7 +681,7 @@ Preview не вызывает сервис скоринга и не меняет
 | Скоринг | без изменений | |
 | API (версия 2) | `POST /api/financing/preview`: новые поля `calculationDate`, `notCompared[]`, `options[].suggestedAmount`, `unsuitable[].suggestedAmount`; `affordability.level` получил `InsufficientData`, `monthlyProfit`, `debtLoad`, `profitBasis` стали nullable; коды `auto_decision_possible`, `checks_automatic`, `affordability_unknown`, `limit_product`; код `credit_history_consent` удалён; овердрафт и кредитная линия вне `options` | фронт ещё не подключён, формат заявок не менялся |
 | Календарь | «сегодня» по Москве в preview, при создании заявки и в возрасте бизнеса | без миграции: хранимые даты не меняются |
-| API | `offer` в `GET /api/applications/{id}` и ответах `offer/accept`, `offer/decline`: новые поля `totalPayment`, `totalInterest` (фактические условия для карточки решения до принятия; preview их не заменяет) | только добавление, без миграции: считаются из суммы, ставки и срока предложения |
+| API | `offer` в `GET /api/applications/{id}` и ответах `offer/accept`, `offer/decline`: новые поля `totalPayment`, `totalInterest` (фактические условия для карточки решения до принятия; preview их не заменяет); для срочных кредитов числа, для овердрафта и кредитной линии `null` | только добавление, без миграции: считаются из суммы, ставки и срока предложения |
 
 ### Конфигурация
 
@@ -744,9 +744,10 @@ export interface FinancingPreview {
 }
 ```
 
-В `Application` и `ApplicationSummary` добавляется `needByDate: string | null`. В `Offer` добавляются `totalPayment: number`
-и `totalInterest: number` — сумма всех платежей и переплата по фактическим условиям предложения; карточка решения до принятия
-берёт итоги отсюда, а не из `cost` preview. Остальные типы не меняются.
+В `Application` и `ApplicationSummary` добавляется `needByDate: string | null`. В `Offer` добавляются `totalPayment: number | null`
+и `totalInterest: number | null` — сумма всех платежей и переплата по фактическим условиям предложения; карточка решения до принятия
+берёт итоги отсюда, а не из `cost` preview. Для овердрафта и кредитной линии оба поля `null`: проценты зависят от использования
+лимита, строки «Всего к возврату» и «Переплата» в карточке не показываются. Остальные типы не меняются.
 
 ## Передача на интеграцию
 

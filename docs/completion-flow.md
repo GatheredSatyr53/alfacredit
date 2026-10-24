@@ -32,7 +32,7 @@ sequenceDiagram
 | Статус | `progressStep` | Терминальный | `availableActions` клиента | Что показать |
 |---|---|---|---|---|
 | `ManualReview` | 3 | нет | `cancel` | в демо-режиме через несколько секунд приходит смоделированный ответ менеджера (`decision.isSimulated` = `true`): одобрение с предложением или отказ |
-| `Approved`, `ApprovedWithConditions` | 4 | нет | `acceptOffer`, `declineOffer` | предложение (`offer`: сумма, срок, ставка, платёж, `totalPayment`, `totalInterest`), кнопки принять/отклонить; после одобрения менеджером путь тот же |
+| `Approved`, `ApprovedWithConditions` | 4 | нет | `acceptOffer`, `declineOffer` | предложение (`offer`: сумма, срок, ставка, платёж, `totalPayment`, `totalInterest`; у овердрафта и кредитной линии итоги `null`), кнопки принять/отклонить; после одобрения менеджером путь тот же |
 | `ContractSigning` | 5 | нет | `signContract`, `cancel` | договор (`contract`), график, ссылка на печатную форму, запрос кода и ввод кода |
 | `Signed` | 5 | нет | нет | «Договор подписан, выполняется выдача», обычно несколько секунд |
 | `Disbursed` | 6 | да | нет | реквизиты выдачи (`disbursement`), график платежей |
@@ -77,7 +77,7 @@ sequenceDiagram
 |---|---|
 | `status` | `AwaitingSignature` ожидает подписи; `Signed` подписан; `Expired` истёк срок подписания; `Cancelled` клиент отказался |
 | `amount`, `termMonths`, `interestRate`, `monthlyPayment` | условия из принятого предложения, ₽ и % годовых |
-| `totalPayment`, `totalInterest` | сумма всех платежей по графику и переплата, ₽; равны `offer.totalPayment` и `offer.totalInterest` принятого предложения |
+| `totalPayment`, `totalInterest` | сумма всех платежей по графику и переплата, ₽; для срочного кредита равны `offer.totalPayment` и `offer.totalInterest` принятого предложения |
 | `disbursementAccount` | расчётный счёт компании для зачисления (20 цифр, синтетический) |
 | `signingDeadline` | до какого момента можно подписать; после него заявка переходит в `Cancelled` |
 | `signing.codeRequestedAt`, `signing.codeExpiresAt` | когда запрошен код и до какого момента он действует (10 минут); `null`, если код не запрашивали |

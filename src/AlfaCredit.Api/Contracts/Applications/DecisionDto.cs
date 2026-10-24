@@ -36,15 +36,16 @@ public sealed record DecisionReasonDto(string Code, string Title, string Explana
 
 /// <summary>
 /// Предложение банка по одобренной заявке: фактические условия, которые клиент принимает или отклоняет.
-/// Платёж, сумма всех платежей и переплата посчитаны по аннуитетному графику и повторяются в договоре без изменений.
+/// Для срочного кредита сумма всех платежей и переплата посчитаны по аннуитетному графику и совпадают с договором;
+/// для овердрафта и кредитной линии они null.
 /// </summary>
 /// <param name="Id">Идентификатор предложения.</param>
 /// <param name="Amount">Сумма, ₽.</param>
 /// <param name="TermMonths">Срок, мес.</param>
 /// <param name="InterestRate">Годовая ставка, %.</param>
 /// <param name="MonthlyPayment">Ежемесячный платёж, ₽.</param>
-/// <param name="TotalPayment">Сумма всех платежей по графику, ₽.</param>
-/// <param name="TotalInterest">Переплата за весь срок, ₽.</param>
+/// <param name="TotalPayment">Сумма всех платежей по графику, ₽; null для овердрафта и кредитной линии.</param>
+/// <param name="TotalInterest">Переплата за весь срок, ₽; null для овердрафта и кредитной линии.</param>
 /// <param name="ExpiresAt">До какого момента действует (UTC).</param>
 /// <param name="Response">Pending, Accepted, Declined или Expired.</param>
 /// <param name="RespondedAt">Когда клиент ответил (UTC).</param>
@@ -54,8 +55,8 @@ public sealed record OfferDto(
     int TermMonths,
     decimal InterestRate,
     decimal MonthlyPayment,
-    decimal TotalPayment,
-    decimal TotalInterest,
+    decimal? TotalPayment,
+    decimal? TotalInterest,
     DateTimeOffset ExpiresAt,
     OfferResponse Response,
     DateTimeOffset? RespondedAt);
