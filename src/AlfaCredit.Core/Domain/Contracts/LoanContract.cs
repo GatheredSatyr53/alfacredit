@@ -116,6 +116,9 @@ public sealed class LoanContract
         ArgumentException.ThrowIfNullOrWhiteSpace(borrowerName);
         ArgumentException.ThrowIfNullOrWhiteSpace(disbursementAccount);
 
+        // Итоги по графику: даты платежей на суммы не влияют; для срочного кредита они равны итогам предложения
+        var totals = LoanMath.Totals(offer.Amount, offer.InterestRate, offer.TermMonths);
+
         return new()
         {
             Id = Guid.CreateVersion7(),
@@ -126,9 +129,8 @@ public sealed class LoanContract
             TermMonths = offer.TermMonths,
             InterestRate = offer.InterestRate,
             MonthlyPayment = offer.MonthlyPayment,
-            // Договор повторяет итоги принятого предложения: один график, один расчёт
-            TotalPayment = offer.TotalPayment,
-            TotalInterest = offer.TotalInterest,
+            TotalPayment = totals.TotalPayment,
+            TotalInterest = totals.TotalInterest,
             LenderName = lenderName.Trim(),
             BorrowerName = borrowerName.Trim(),
             BorrowerInn = borrowerInn,

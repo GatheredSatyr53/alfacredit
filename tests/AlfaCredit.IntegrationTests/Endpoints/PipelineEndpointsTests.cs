@@ -48,6 +48,34 @@ public sealed class PipelineEndpointsTests(ApiFactory factory)
     }
 
     [DockerFact]
+    public async Task Limit_products_get_an_offer_without_total_payment_and_overpayment()
+    {
+        using var client = await factory.CreateClient().LoginAsAsync("client_good");
+        var companyId = await client.GetFirstCompanyIdAsync();
+
+        foreach (var (productCode, termMonths, rate) in new[] { ("overdraft", 6, 21m), ("credit-line", 12, 18.5m) })
+        {
+            var id = await client.CreateApplicationAsync(companyId, productCode, 1_000_000, termMonths, "WorkingCapital");
+            var settled = await client.WaitForDecisionAsync(id);
+
+            settled.GetProperty("status").GetProperty("code").GetString().ShouldBe("Approved", productCode);
+            var offer = settled.GetProperty("offer");
+            offer.GetProperty("amount").GetDecimal().ShouldBe(1_000_000, productCode);
+            offer.GetProperty("interestRate").GetDecimal().ShouldBe(rate, productCode);
+            offer.GetProperty("totalPayment").ValueKind.ShouldBe(JsonValueKind.Null, $"{productCode}: проценты зависят от использования лимита");
+            offer.GetProperty("totalInterest").ValueKind.ShouldBe(JsonValueKind.Null, productCode);
+
+            // Принятие работает как раньше, итоги в предложении остаются null
+            var accepted = await client.PostAsync($"/api/applications/{id}/offer/accept", content: null);
+            accepted.StatusCode.ShouldBe(HttpStatusCode.OK, productCode);
+            var body = await accepted.Content.ReadFromJsonAsync<JsonElement>();
+            body.GetProperty("status").GetProperty("code").GetString().ShouldBe("ContractSigning", productCode);
+            body.GetProperty("offer").GetProperty("totalPayment").ValueKind.ShouldBe(JsonValueKind.Null, productCode);
+            body.GetProperty("offer").GetProperty("totalInterest").ValueKind.ShouldBe(JsonValueKind.Null, productCode);
+        }
+    }
+
+    [DockerFact]
     public async Task Medium_client_gets_conditions_and_can_decline()
     {
         using var client = await factory.CreateClient().LoginAsAsync("client_medium");

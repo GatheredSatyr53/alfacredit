@@ -1,4 +1,5 @@
 using AlfaCredit.Core.Common;
+using AlfaCredit.Core.Domain.Products;
 
 namespace AlfaCredit.Core.Domain.Decisions;
 
@@ -39,17 +40,16 @@ public sealed class Offer
 
     public DateTimeOffset CreatedAt { get; private set; }
 
-    /// <summary>Сумма всех платежей по графику, ₽. Считается из суммы, ставки и срока предложения так же, как в договоре.</summary>
-    public decimal TotalPayment => Totals.TotalPayment;
-
-    /// <summary>Переплата за весь срок, ₽. Считается так же, как в договоре.</summary>
-    public decimal TotalInterest => Totals.TotalInterest;
-
     public bool IsPending => Response == OfferResponse.Pending;
 
-    private LoanTotals Totals => LoanMath.Totals(Amount, InterestRate, TermMonths);
-
     public bool IsExpired(DateTimeOffset now) => IsPending && now >= ExpiresAt;
+
+    /// <summary>
+    /// Сумма всех платежей и переплата по условиям предложения. Для срочного кредита считаются по аннуитетному графику
+    /// так же, как в договоре. Для овердрафта и кредитной линии <c>null</c>: проценты зависят от использования лимита.
+    /// </summary>
+    public LoanTotals? Totals(ProductType productType) =>
+        productType.HasAnnuitySchedule() ? LoanMath.Totals(Amount, InterestRate, TermMonths) : null;
 
     public static Offer Create(Guid applicationId, Guid decisionId, decimal amount, int termMonths, decimal interestRate, decimal monthlyPayment, DateTimeOffset now, TimeSpan validity) =>
         new()

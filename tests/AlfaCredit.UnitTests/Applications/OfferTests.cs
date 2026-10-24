@@ -23,15 +23,17 @@ public sealed class OfferTests
     }
 
     [Fact]
-    public void Offer_carries_total_payment_and_overpayment_for_its_own_terms()
+    public void Term_loan_offer_carries_total_payment_and_overpayment_for_its_own_terms()
     {
         var application = ApprovedApplication();
         var offer = application.CurrentOffer.ShouldNotBeNull();
 
-        offer.TotalPayment.ShouldBe(LoanMath.Totals(1_000_000, 19.5m, 12).TotalPayment);
-        offer.TotalInterest.ShouldBe(LoanMath.Totals(1_000_000, 19.5m, 12).TotalInterest);
-        offer.TotalPayment.ShouldBe(offer.Amount + offer.TotalInterest);
-        offer.TotalInterest.ShouldBeInRange(100_000m, 115_000m);
+        var totals = offer.Totals(application.Product.Type).ShouldNotBeNull();
+
+        totals.ShouldBe(LoanMath.Totals(1_000_000, 19.5m, 12));
+        totals.TotalPayment.ShouldBe(1_108_744.51m);
+        totals.TotalInterest.ShouldBe(108_744.51m);
+        totals.TotalPayment.ShouldBe(offer.Amount + totals.TotalInterest);
     }
 
     [Fact]
@@ -39,13 +41,40 @@ public sealed class OfferTests
     {
         var offer = Offer.Create(Guid.NewGuid(), Guid.NewGuid(), 1_500_000, 12, 19.5m, 138_593.06m, TestData.Now, TimeSpan.FromDays(7));
 
-        offer.TotalPayment.ShouldBe(1_663_116.74m);
-        offer.TotalInterest.ShouldBe(163_116.74m);
+        offer.Totals(ProductType.WorkingCapital).ShouldBe(new LoanTotals(1_663_116.74m, 163_116.74m));
 
         var reduced = Offer.Create(Guid.NewGuid(), Guid.NewGuid(), 2_400_000, 24, 22.5m, 125_100.96m, TestData.Now, TimeSpan.FromDays(7));
 
-        reduced.TotalPayment.ShouldBe(3_002_423.02m);
-        reduced.TotalInterest.ShouldBe(602_423.02m);
+        reduced.Totals(ProductType.WorkingCapital).ShouldBe(new LoanTotals(3_002_423.02m, 602_423.02m));
+    }
+
+    [Theory]
+    [InlineData(ProductType.WorkingCapital)]
+    [InlineData(ProductType.Express)]
+    [InlineData(ProductType.Investment)]
+    public void Term_loans_get_annuity_totals(ProductType type)
+    {
+        var offer = Offer.Create(Guid.NewGuid(), Guid.NewGuid(), 1_000_000, 12, 21m, 93_114.82m, TestData.Now, TimeSpan.FromDays(7));
+
+        offer.Totals(type).ShouldBe(LoanMath.Totals(1_000_000, 21m, 12));
+    }
+
+    [Theory]
+    [InlineData(ProductType.Overdraft)]
+    [InlineData(ProductType.CreditLine)]
+    public void Limit_products_have_no_totals_because_interest_depends_on_usage(ProductType type)
+    {
+        var offer = Offer.Create(Guid.NewGuid(), Guid.NewGuid(), 1_000_000, 12, 21m, 93_114.82m, TestData.Now, TimeSpan.FromDays(7));
+
+        offer.Totals(type).ShouldBeNull();
+    }
+
+    [Fact]
+    public void Only_term_loans_have_an_annuity_schedule()
+    {
+        // Новый тип продукта по умолчанию получает null-итоги; тест заставит решить явно
+        Enum.GetValues<ProductType>().Where(t => t.HasAnnuitySchedule())
+            .ShouldBe([ProductType.WorkingCapital, ProductType.Investment, ProductType.Express], ignoreOrder: true);
     }
 
     [Fact]
