@@ -14,13 +14,20 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     // сборка двух хостов одновременно в одном процессе падает с «The logger is already frozen», поэтому сборка сериализована.
     private static readonly object HostBuildLock = new();
 
-    private readonly PostgreSqlContainer? _database = DockerAvailability.IsAvailable
+    // Внешний PostgreSQL (ALFACREDIT_TEST_POSTGRES) имеет приоритет: отдельная база на каждый стенд; иначе контейнер Testcontainers
+    private readonly PostgreSqlContainer? _database = TestDatabase.ExternalAdminConnectionString is null && DockerAvailability.IsAvailable
         ? new PostgreSqlBuilder("postgres:16.15-alpine").Build()
         : null;
 
+    private TestDatabase? _externalDatabase;
+
     async Task IAsyncLifetime.InitializeAsync()
     {
-        if (_database is not null)
+        if (TestDatabase.ExternalAdminConnectionString is { } admin)
+        {
+            _externalDatabase = await TestDatabase.CreateAsync(admin);
+        }
+        else if (_database is not null)
         {
             await _database.StartAsync();
         }
@@ -35,6 +42,11 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         if (_database is not null)
         {
             await _database.DisposeAsync();
+        }
+
+        if (_externalDatabase is not null)
+        {
+            await _externalDatabase.DropAsync();
         }
     }
 
@@ -59,7 +71,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(Environments.Development);
-        builder.UseSetting("ConnectionStrings:Default", _database?.GetConnectionString() ?? "Host=localhost;Database=unavailable");
+        builder.UseSetting("ConnectionStrings:Default", _externalDatabase?.ConnectionString ?? _database?.GetConnectionString() ?? "Host=localhost;Database=unavailable");
         builder.UseSetting("Jwt:Key", "integration-tests-jwt-signing-key-0123456789abcdef0123456789");
         builder.UseSetting("Database:MigrateOnStartup", "true");
         builder.UseSetting("Seed:Enabled", "true");

@@ -304,7 +304,7 @@ public sealed class ApplicationPipeline(
 
         var company = application.Company;
         var product = application.Product;
-        var today = DateOnly.FromDateTime(now.UtcDateTime);
+        var today = BankCalendar.Today(now);
 
         return new ScoringRequest(
             Guid.CreateVersion7(),

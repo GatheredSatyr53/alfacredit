@@ -41,7 +41,7 @@ public sealed class FinancingPreviewService(
         }
 
         var now = clock.GetUtcNow();
-        NeedByDateRules.Validate(query.NeedByDate, DateOnly.FromDateTime(now.UtcDateTime), errors, options.Value.MaxNeedByDays);
+        NeedByDateRules.Validate(query.NeedByDate, BankCalendar.Today(now), errors, options.Value.MaxNeedByDays);
         errors.ThrowIfAny();
 
         var catalog = await products.ListActiveAsync(cancellationToken);

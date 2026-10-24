@@ -2,6 +2,7 @@ using AlfaCredit.Api.Auth;
 using AlfaCredit.Api.Contracts.Companies;
 using AlfaCredit.Api.Mapping;
 using AlfaCredit.Core.Abstractions;
+using AlfaCredit.Core.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,7 +27,7 @@ public sealed class CompaniesController(ICompanyRepository companies, TimeProvid
             ? await companies.ListAllAsync(cancellationToken)
             : await companies.ListForUserAsync(actor.UserId, cancellationToken);
 
-        var today = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
+        var today = BankCalendar.Today(clock.GetUtcNow());
         return items.Select(c => c.ToDto(actor, today)).ToArray();
     }
 
@@ -52,7 +53,7 @@ public sealed class CompaniesController(ICompanyRepository companies, TimeProvid
             return Problem(statusCode: StatusCodes.Status403Forbidden, title: "Доступ запрещён", detail: "Вы не являетесь представителем этой компании.");
         }
 
-        var today = DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
+        var today = BankCalendar.Today(clock.GetUtcNow());
         return company.ToDto(actor, today);
     }
 }

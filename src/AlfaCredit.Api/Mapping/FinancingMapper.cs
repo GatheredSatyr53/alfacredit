@@ -8,6 +8,7 @@ public static class FinancingMapper
 {
     public static FinancingPreviewDto ToDto(this FinancingPreview preview) => new(
         preview.CalculatedAt,
+        preview.CalculationDate,
         new PreviewCompanyDto(preview.Company.Id, preview.Company.Name, preview.Company.Inn, preview.BusinessAgeMonths),
         new PreviewRequestDto(
             preview.Request.Amount,
@@ -19,7 +20,8 @@ public static class FinancingMapper
         preview.Summary,
         preview.Disclaimer,
         preview.Options.Select(o => o.ToDto(preview)).ToArray(),
-        preview.Unsuitable.Select(u => new UnsuitableProductDto(u.Product.Code, u.Product.Name, u.Reasons.Select(ToDto).ToArray())).ToArray());
+        preview.NotCompared.Select(n => new NotComparedProductDto(n.Product.Code, n.Product.Name, n.Product.Type, ToDto(n.Reason))).ToArray(),
+        preview.Unsuitable.Select(u => new UnsuitableProductDto(u.Product.Code, u.Product.Name, u.Reasons.Select(ToDto).ToArray(), u.SuggestedAmount?.ToDto())).ToArray());
 
     private static FinancingOptionDto ToDto(this FinancingOption option, FinancingPreview preview) => new(
         option.Product.Code,
@@ -51,10 +53,13 @@ public static class FinancingMapper
             option.Funding.ExpectedDate,
             option.Funding.InTime,
             option.Funding.Explanation),
+        option.SuggestedAmount?.ToDto(),
         option.Explanations.Select(ToDto).ToArray(),
         option.Limitations.Select(ToDto).ToArray(),
         option.Requirements.Select(ToDto).ToArray(),
         new ApplyWithDto(preview.Company.Id, option.Product.Code, option.Amount, option.TermMonths, preview.Request.Purpose, preview.Request.NeedByDate));
+
+    private static AmountSuggestionDto ToDto(this AmountSuggestion suggestion) => new(suggestion.Amount, suggestion.Basis, suggestion.Text);
 
     private static PreviewNoteDto ToDto(PreviewNote note) => new(note.Code, note.Text);
 }

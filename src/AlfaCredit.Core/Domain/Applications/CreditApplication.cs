@@ -129,7 +129,9 @@ public sealed class CreditApplication
             errors.Add("purpose", $"Цель «{purpose.Title()}» недоступна для продукта «{product.Name}». Доступные цели: {allowed}.");
         }
 
-        var businessAgeMonths = company.GetBusinessAgeMonths(DateOnly.FromDateTime(now.UtcDateTime));
+        // «Сегодня» по Москве: возраст бизнеса и дата потребности не зависят от часового пояса сервера
+        var today = BankCalendar.Today(now);
+        var businessAgeMonths = company.GetBusinessAgeMonths(today);
         if (businessAgeMonths < product.MinBusinessAgeMonths)
         {
             errors.Add("companyId", $"Возраст бизнеса {businessAgeMonths} мес., для продукта «{product.Name}» требуется не менее {product.MinBusinessAgeMonths} мес.");
@@ -140,7 +142,7 @@ public sealed class CreditApplication
             errors.Add("purposeDescription", $"Описание цели не длиннее {PurposeDescriptionMaxLength} символов.");
         }
 
-        NeedByDateRules.Validate(needByDate, DateOnly.FromDateTime(now.UtcDateTime), errors);
+        NeedByDateRules.Validate(needByDate, today, errors);
 
         errors.ThrowIfAny();
 

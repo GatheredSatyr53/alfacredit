@@ -15,7 +15,7 @@ public sealed class FinancingPreviewServiceTests
     private static readonly Actor Client = new(Guid.NewGuid(), UserRole.Client);
     private static readonly Actor OtherClient = new(Guid.NewGuid(), UserRole.Client);
     private static readonly Actor Manager = new(Guid.NewGuid(), UserRole.Manager);
-    private static readonly DateOnly Today = DateOnly.FromDateTime(TestData.Now.UtcDateTime);
+    private static readonly DateOnly Today = Core.Common.BankCalendar.Today(TestData.Now);
 
     private readonly Core.Domain.Companies.Company _company = TestData.Company(memberUserId: Client.UserId);
     private readonly FinancingPreviewOptions _options = new();
@@ -76,6 +76,22 @@ public sealed class FinancingPreviewServiceTests
     }
 
     [Fact]
+    public async Task Date_window_is_checked_against_the_moscow_date()
+    {
+        // 20.10.2026 21:30 UTC: по Москве уже 21.10.2026
+        var lateEvening = new DateTimeOffset(2026, 10, 20, 21, 30, 0, TimeSpan.Zero);
+        var service = CreateService(lateEvening);
+
+        var exception = await Should.ThrowAsync<ValidationException>(() =>
+            service.PreviewAsync(Query() with { NeedByDate = new DateOnly(2026, 10, 20) }, Client, CancellationToken.None));
+        exception.Errors.Keys.ShouldBe(["needByDate"]);
+
+        var preview = await service.PreviewAsync(Query() with { NeedByDate = new DateOnly(2026, 10, 21) }, Client, CancellationToken.None);
+        preview.CalculationDate.ShouldBe(new DateOnly(2026, 10, 21));
+        preview.DaysUntilNeeded.ShouldBe(0);
+    }
+
+    [Fact]
     public async Task Non_positive_amount_and_term_are_reported_together()
     {
         var service = CreateService();
@@ -88,10 +104,10 @@ public sealed class FinancingPreviewServiceTests
 
     private FinancingPreviewQuery Query() => new(_company.Id, 1_500_000, LoanPurpose.WorkingCapital, Today.AddDays(30), 12);
 
-    private FinancingPreviewService CreateService() => new(
+    private FinancingPreviewService CreateService(DateTimeOffset? now = null) => new(
         new InMemoryCompanyRepository(_company),
         new InMemoryProductRepository(TestData.Product()),
         new FinancingAdvisor(_options, new DecisionPolicyOptions()),
-        new FixedTimeProvider(TestData.Now),
+        new FixedTimeProvider(now ?? TestData.Now),
         Options.Create(_options));
 }
