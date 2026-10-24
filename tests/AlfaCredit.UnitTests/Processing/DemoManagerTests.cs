@@ -187,11 +187,11 @@ public sealed class DemoManagerTests
     }
 
     private CreditApplication SubmitLargeApplication() =>
-        Submit(amount: 8_000_000, termMonths: 24, revenue: 180_000_000, netProfit: 16_000_000, monthlyDebtPayments: 1_200_000);
+        Submit(amount: 8_000_000, termMonths: 24, revenue: 180_000_000, netProfit: 16_000_000, monthlyDebtPayments: 1_200_000, annualExpenses: 160_000_000);
 
-    private CreditApplication Submit(decimal amount, int termMonths, decimal revenue = 48_000_000, decimal? netProfit = 7_200_000, decimal monthlyDebtPayments = 150_000)
+    private CreditApplication Submit(decimal amount, int termMonths, decimal revenue = 48_000_000, decimal? netProfit = 7_200_000, decimal monthlyDebtPayments = 150_000, decimal? annualExpenses = null)
     {
-        var company = TestData.Company(memberUserId: _clientId, annualRevenue: revenue, netProfit: netProfit, monthlyDebtPayments: monthlyDebtPayments);
+        var company = TestData.Company(memberUserId: _clientId, annualRevenue: revenue, netProfit: netProfit, monthlyDebtPayments: monthlyDebtPayments, annualExpenses: annualExpenses);
         var application = CreditApplication.Create(company, TestData.Product(), _clientId, amount, termMonths, LoanPurpose.WorkingCapital, null, TestData.Now);
         _applications.Add(application);
         _jobs.Add(ProcessingJob.Create(application.Id, ProcessingStage.Validate, TestData.Now, TimeSpan.Zero));

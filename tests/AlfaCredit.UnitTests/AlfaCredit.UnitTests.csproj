@@ -21,4 +21,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Общий эталон rules-0.3 с сервисом scoring: копия data/conformance/rules-0.3.json из репозитория uandrosova07-arch/scoring -->
+    <None Include="Scoring/conformance-rules-0.3.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

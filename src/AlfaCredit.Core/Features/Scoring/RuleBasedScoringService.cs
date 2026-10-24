@@ -1,3 +1,4 @@
+using System.Globalization;
 using AlfaCredit.Core.Abstractions;
 using AlfaCredit.Core.Common;
 using AlfaCredit.Core.Domain.Scoring;
@@ -7,10 +8,12 @@ namespace AlfaCredit.Core.Features.Scoring;
 /// <summary>
 /// Встроенная балльная модель. Явная и объяснимая: каждому фактору соответствует вклад в баллы и фраза для клиента.
 /// Описана в docs/decision-logic.md. Используется сама по себе или как запасной вариант при недоступности внешнего сервиса.
+/// Те же правила (rules-0.3) реализует сервис scoring, поэтому результат не зависит от того, кто посчитал.
 /// </summary>
 public sealed class RuleBasedScoringService : IScoringService
 {
-    public const string ModelVersion = "rules-v1";
+    // rules-0.3: общая версия с сервисом scoring вместо rules-v1
+    public const string ModelVersion = "rules-0.3";
     public const int BaseScore = 50;
 
     public Task<ScoringOutcome> ScoreAsync(ScoringRequest request, CancellationToken cancellationToken)
@@ -46,36 +49,59 @@ public sealed class RuleBasedScoringService : IScoringService
             "revenue_to_amount",
             "Выручка к сумме кредита",
             ratioImpact,
-            $"{ratio:0.0}x",
+            Invariant($"{ratio:0.0}x"), // rules-0.3: значения в инвариантной культуре, как в сервисе scoring
             ratioImpact > 0 ? "Запрошенная сумма небольшая относительно годовой выручки."
             : "Запрошенная сумма велика относительно годовой выручки."));
 
-        // 3. Долговая нагрузка: платежи по кредитам к месячной прибыли
-        decimal monthlyProfit;
-        if (financials.NetProfitRub is { } netProfit)
+        // 3. rules-0.3: расходы к выручке. Только штраф: прибыль, а значит и нагрузка, уже учитывает расходы.
+        if (financials.ExpensesRub is { } expenses)
         {
-            monthlyProfit = netProfit / 12m;
+            if (financials.RevenueRub > 0)
+            {
+                var expenseRatio = expenses / financials.RevenueRub;
+                var expenseImpact = expenseRatio > 0.9m ? -10 : 0;
+                factors.Add(new ScoringFactor(
+                    "expense_ratio",
+                    "Расходы к выручке",
+                    expenseImpact,
+                    Invariant($"{expenseRatio:0.00}"),
+                    expenseImpact < 0 ? "Расходы забирают почти всю выручку, запас прочности небольшой."
+                    : "Расходы занимают обычную долю выручки."));
+            }
         }
         else
         {
-            monthlyProfit = financials.RevenueRub * 0.10m / 12m;
+            warnings.Add("expenses_missing");
+        }
+
+        // 4. Долговая нагрузка: платежи по кредитам к месячной прибыли
+        decimal annualProfit;
+        if (financials.NetProfitRub is { } netProfit)
+        {
+            annualProfit = netProfit;
+        }
+        else
+        {
+            // rules-0.3: если расходы известны, прибыль = выручка − расходы; 10 % выручки только когда нет и расходов
+            annualProfit = financials.ExpensesRub is { } knownExpenses ? financials.RevenueRub - knownExpenses : financials.RevenueRub * 0.10m;
             warnings.Add("net_profit_missing");
         }
 
         var totalPayments = financials.MonthlyDebtPaymentsRub + request.Application.EstimatedMonthlyPaymentRub;
-        var noProfit = monthlyProfit <= 0;
-        var load = noProfit ? 9.99m : totalPayments / monthlyProfit;
+        // rules-0.3: одно деление (платежи * 12 / годовая прибыль) вместо деления на месячную прибыль: на границах
+        // 0.3, 0.5 и 0.7 результат точный и не зависит от округления 28-го знака decimal
+        var load = annualProfit <= 0 ? 9.99m : totalPayments * 12m / annualProfit;
         var loadImpact = load switch { < 0.3m => 10, < 0.5m => 0, < 0.7m => -10, _ => -25 };
         factors.Add(new ScoringFactor(
             "debt_load",
             "Долговая нагрузка",
             loadImpact,
-            noProfit ? "прибыль отсутствует" : $"{load:0.00}",
+            load >= 9.99m ? "прибыль отсутствует" : Invariant($"{load:0.00}"),
             loadImpact > 0 ? "Платежи по кредитам занимают небольшую часть прибыли."
             : loadImpact == 0 ? "Платежи по кредитам занимают около половины месячной прибыли."
             : "Платежи по кредитам с учётом нового займа занимают слишком большую часть прибыли."));
 
-        // 4. Кредитная история
+        // 5. Кредитная история
         if (checks.CreditBureau is { } bureau)
         {
             int historyImpact;
@@ -109,7 +135,7 @@ public sealed class RuleBasedScoringService : IScoringService
             warnings.Add("credit_bureau_missing");
         }
 
-        // 5. Налоговая задолженность и блокировки
+        // 6. Налоговая задолженность и блокировки
         if (checks.Fns is { } fns)
         {
             var taxImpact = fns.TaxDebtRub switch { <= 0 => 5, < 50_000 => -5, _ => -15 };
@@ -132,7 +158,7 @@ public sealed class RuleBasedScoringService : IScoringService
             warnings.Add("fns_missing");
         }
 
-        // 6. Исполнительные производства
+        // 7. Исполнительные производства
         if (checks.Fssp is { } fssp)
         {
             var fsspImpact = fssp.OpenProceedings > 0 ? -10 : 0;
@@ -148,7 +174,7 @@ public sealed class RuleBasedScoringService : IScoringService
             warnings.Add("fssp_missing");
         }
 
-        // 7. Залог
+        // 8. Залог
         if (request.Application.CollateralOffered)
         {
             factors.Add(new ScoringFactor("collateral", "Обеспечение", 10, "предложено", "Предложенный залог снижает риск банка."));
@@ -158,9 +184,12 @@ public sealed class RuleBasedScoringService : IScoringService
         var grade = RiskGrades.FromScore(score);
         var probabilityOfDefault = Math.Round(0.02m + (100 - score) / 100m * 0.30m, 3);
 
-        var ordered = factors.OrderByDescending(f => Math.Abs(f.Impact)).ThenBy(f => f.Code).ToArray();
+        // rules-0.3: порядковое сравнение кодов, как в Python (на текущих кодах совпадает с прежним, но не зависит от культуры)
+        var ordered = factors.OrderByDescending(f => Math.Abs(f.Impact)).ThenBy(f => f.Code, StringComparer.Ordinal).ToArray();
         return new ScoringOutcome(score, grade, probabilityOfDefault, ordered, warnings, request.MissingInputs(), ModelVersion, ScoringSource.Rules);
     }
+
+    private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
     private static string FormatMonths(int months)
     {

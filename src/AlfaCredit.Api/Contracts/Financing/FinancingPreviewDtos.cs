@@ -52,7 +52,7 @@ public sealed record PreviewNoteDto(string Code, string Text);
 /// <param name="Affordability">Кредитная нагрузка («потяну ли платёж»).</param>
 /// <param name="Funding">Ориентир получения денег («успею ли к дате»).</param>
 /// <param name="Explanations">Почему вариант подходит: product_about, no_collateral, auto_decision, term_suggested, cheapest, data_prefilled.</param>
-/// <param name="Limitations">Что может изменить условия: rate_depends_on_risk, manual_review_amount, collateral_required, amount_may_be_reduced, high_debt_load, deadline_missed.</param>
+/// <param name="Limitations">Что может изменить условия: rate_depends_on_risk, manual_review_amount, collateral_required, amount_may_be_reduced, expense_ratio_high, elevated_debt_load, high_debt_load, deadline_missed.</param>
 /// <param name="Requirements">Что нужно для оформления: credit_history_consent, financials_required, collateral_documents.</param>
 /// <param name="ApplyWith">Готовое тело для POST /api/applications.</param>
 public sealed record FinancingOptionDto(
@@ -96,7 +96,7 @@ public sealed record OptionCostDto(
 /// <param name="MonthlyProfit">Месячная прибыль, по которой считается нагрузка, ₽.</param>
 /// <param name="CurrentDebtPayments">Текущие ежемесячные платежи по кредитам из карточки компании, ₽.</param>
 /// <param name="DebtLoad">(текущие платежи + новый платёж) / месячная прибыль, не больше 9.99; null, если прибыли нет.</param>
-/// <param name="Level">Comfortable (меньше 30 %), Moderate (30–70 %), High (больше 70 % или нет прибыли).</param>
+/// <param name="Level">Comfortable (меньше 30 %), Moderate (30–50 %), Elevated (50–70 %: оценка риска снижается), High (70 % и больше или нет прибыли); банды фактора debt_load правил rules-0.3.</param>
 /// <param name="ProfitBasis">NetProfit, RevenueMinusExpenses или RevenueEstimate (прибыль неизвестна, принято 10 % выручки).</param>
 /// <param name="Explanation">Фраза для клиента.</param>
 public sealed record AffordabilityDto(

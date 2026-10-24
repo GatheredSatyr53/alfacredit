@@ -9,4 +9,4 @@ docs/
 tests/
 .env
 *.md
-scoring/
+compose.scoring.yml

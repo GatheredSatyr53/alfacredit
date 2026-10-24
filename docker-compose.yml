@@ -23,12 +23,10 @@ services:
 
   # Сервис скоринга (Python) по docs/scoring-contract.md. Сейчас заглушка из ./scoring, заменяется сервисом ML-команды.
   scoring:
-    build:
-      context: ./scoring
-      dockerfile: Dockerfile
-    image: alfacredit-scoring:local
-    environment:
-      PORT: "8000"
+    # Сервис скоринга команды ML (правила rules-0.3, репозиторий uandrosova07-arch/scoring): публичный образ из GitHub Container
+    # Registry, закреплён на коммите репозитория scoring. Те же правила встроены в API как резервная модель.
+    # Сборка из локального checkout репозитория scoring: docker compose -f docker-compose.yml -f compose.scoring.yml up --build
+    image: ${SCORING_IMAGE:-ghcr.io/uandrosova07-arch/scoring:4ce9e8444e24b856a404753b5218cd00fc7bea19}
     ports:
       # Только для локальной отладки (curl localhost:8000/health); API ходит по внутреннему адресу http://scoring:8000
       - "127.0.0.1:${SCORING_PORT:-8000}:8000"

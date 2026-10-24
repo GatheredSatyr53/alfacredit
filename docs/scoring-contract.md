@@ -18,7 +18,7 @@
 | Формат | JSON, UTF-8, поля в `snake_case`, `Content-Type: application/json`, тело с `Content-Length` |
 | Таймаут и повторы | 5 секунд на запрос (`Scoring__TimeoutSeconds`), затем 2 повтора (`Scoring__Retries`) с паузами 1 и 2 секунды (`Scoring__RetryDelayMs` × номер попытки) |
 | Ошибки | `400` с описанием, если payload невалиден: backend не повторяет запрос и сразу считает встроенной моделью. `5xx`, таймаут, обрыв связи: повторы, затем встроенная модель |
-| Откат | результат помечается `source = RulesFallback`, `model_version = rules-v1`, в `warnings` добавляется `external_scoring_unavailable`; заявка идёт дальше и не зависает |
+| Откат | результат помечается `source = RulesFallback`, `model_version = rules-0.3` (встроенная модель считает по тем же правилам, балл и грейд совпадают), в `warnings` добавляется `external_scoring_unavailable`; заявка идёт дальше и не зависает |
 | Идемпотентность | `request_id` уникален для каждого расчёта; повтор с тем же `request_id` можно обслужить из кэша |
 
 Сервис не принимает решений и не читает базу: всё, что ему нужно, приходит в запросе.
@@ -28,6 +28,8 @@
 - **Единицы**: деньги в рублях, целыми числами без форматирования (`1500000`, не `"1 500 000"` и не тысячи); backend округляет до рубля.
   Годовые показатели за последние 12 месяцев, месячные за календарный месяц; период всегда в названии поля.
   Ставка в процентах годовых дробным числом (`19.5`).
+- **Обязательные поля**: `revenue_rub`, `monthly_debt_payments_rub`, `business_age_months`, `amount_rub`, `term_months`,
+  `estimated_monthly_payment_rub` backend заполняет всегда (в C# они не nullable); `null` в них сервис отклоняет с `400`.
 - **Пропуски**: поле присутствует со значением `null`. `NaN` и `Infinity` в JSON недопустимы и не будут отправляться.
   Если внешняя проверка не получена целиком, `null` стоит на месте всего блока (`"credit_bureau": null`).
 - **Что не передаётся**: дата, к которой клиенту нужны деньги (`needByDate` заявки, `docs/financing-preview.md`),
@@ -150,34 +152,64 @@ backend проверяет отдельно, до применения грей�
 
 ## Ответ
 
+Ответ сервиса `rules-0.3` на демо-заявку ООО «Ромашка» (тот же, что даёт встроенная модель backend):
+
 ```json
 {
   "request_id": "01a15975-f14b-7636-a356-687331e9eb8d",
-  "model_version": "lgbm-2026.10.21",
-  "score": 78,
-  "risk_grade": "B",
-  "probability_of_default": 0.06,
+  "model_version": "rules-0.3",
+  "score": 95,
+  "risk_grade": "A",
+  "probability_of_default": 0.035,
   "factors": [
-    {
-      "code": "debt_load",
-      "title": "Долговая нагрузка",
-      "impact": -8,
-      "value": "0.48",
-      "client_explanation": "Платежи по кредитам занимают около половины месячной прибыли."
-    },
-    {
-      "code": "business_age",
-      "title": "Возраст бизнеса",
-      "impact": 10,
-      "value": "7 лет 7 мес.",
-      "client_explanation": "Компания работает больше трёх лет."
-    },
     {
       "code": "credit_history",
       "title": "Кредитная история",
       "impact": 15,
       "value": "без просрочек",
       "client_explanation": "Просрочек по кредитам за два года нет."
+    },
+    {
+      "code": "revenue_to_amount",
+      "title": "Выручка к сумме кредита",
+      "impact": 15,
+      "value": "32.0x",
+      "client_explanation": "Запрошенная сумма небольшая относительно годовой выручки."
+    },
+    {
+      "code": "business_age",
+      "title": "Возраст бизнеса",
+      "impact": 10,
+      "value": "7 г. 7 мес.",
+      "client_explanation": "Компания работает больше трёх лет, это снижает риск."
+    },
+    {
+      "code": "tax_debt",
+      "title": "Налоговая задолженность",
+      "impact": 5,
+      "value": "нет",
+      "client_explanation": "Задолженности перед налоговой нет."
+    },
+    {
+      "code": "debt_load",
+      "title": "Долговая нагрузка",
+      "impact": 0,
+      "value": "0.48",
+      "client_explanation": "Платежи по кредитам занимают около половины месячной прибыли."
+    },
+    {
+      "code": "enforcement",
+      "title": "Исполнительные производства",
+      "impact": 0,
+      "value": "нет",
+      "client_explanation": "Открытых исполнительных производств нет."
+    },
+    {
+      "code": "expense_ratio",
+      "title": "Расходы к выручке",
+      "impact": 0,
+      "value": "0.85",
+      "client_explanation": "Расходы занимают обычную долю выручки."
     }
   ],
   "warnings": [],
@@ -190,9 +222,9 @@ backend проверяет отдельно, до применения грей�
 | `request_id` | string | эхо запроса, для сопоставления в логах |
 | `score` | int 0..100 | обязательно |
 | `risk_grade` | `A`..`E` | обязательно |
-| `probability_of_default` | float 0..1 или null | желательно, показывается менеджеру |
-| `factors` | массив | 3..7 главных факторов по убыванию модуля `impact`; `impact` в баллах со знаком, `value` строка для карточки, `client_explanation` фраза для клиента простым языком; `title` и `client_explanation` на русском. `code` в snake_case без префикса `factor_` (например `debt_load`): в причинах решения backend сам добавляет `factor_`, а уже имеющийся префикс не удваивает |
-| `warnings` | массив строк | предупреждения модели: чем заменены отсутствующие входы (`net_profit_missing`), особенности расчёта |
+| `probability_of_default` | float 0..1 | по формуле `0.02 + (100 − score) / 100 × 0.30`, одинаковой у сервиса и встроенной модели; показывается менеджеру |
+| `factors` | массив | 3..8 факторов по убыванию модуля `impact`, при равенстве по коду (восьмой только при залоге); `impact` в баллах со знаком, `value` строка для карточки, `client_explanation` фраза для клиента простым языком; `title` и `client_explanation` на русском. `code` в snake_case без префикса `factor_` (например `debt_load`): в причинах решения backend сам добавляет `factor_`, а уже имеющийся префикс не удваивает |
+| `warnings` | массив строк | предупреждения в порядке расчёта: `expenses_missing`, `net_profit_missing`, `credit_bureau_missing`, `fns_missing`, `fssp_missing`; backend добавляет `external_scoring_unavailable` при откате |
 | `missing_data` | массив строк | каких входов не хватало: пути полей запроса, например `checks.credit_bureau`, `company.financials.net_profit_rub`. Backend дополняет список тем, что сам отправил как `null` |
 | `model_version` | string | сохраняется в заявке для воспроизводимости |
 
@@ -213,7 +245,7 @@ Backend разбирает ответ терпимо: числа могут пр
 | `request_id` | из запроса |
 | `score`, `grade`, `probability_of_default` | из ответа |
 | `factors` (jsonb), `warnings`, `missing_data` | из ответа; `missing_data` объединяется с пропусками, которые backend отправил как `null` |
-| `model_version` | из ответа (`rules-v1` для встроенной модели) |
+| `model_version` | из ответа (`rules-0.3` и у сервиса, и у встроенной модели) |
 | `source` | `External`, `RulesFallback` или `Rules` |
 | `duration_ms`, `computed_at` | длительность вызова с учётом повторов и момент расчёта |
 
@@ -244,10 +276,22 @@ Backend разбирает ответ терпимо: числа могут пр
 
 Для любого другого ИНН симуляторы генерируют правдоподобный профиль, одинаковый при каждом запросе.
 
+## Общие правила и эталон
+
+Сервис scoring и встроенная модель backend (`RuleBasedScoringService`) считают по одним правилам `rules-0.3`:
+факторы, пороги, баллы, тексты для клиента, обработка пропусков и формула PD описаны в `docs/decision-logic.md`
+и в `docs/calculation.md` репозитория scoring. Поэтому балл, грейд и решение банка не зависят от того, ответил ли сервис.
+
+| Что | Где |
+|---|---|
+| Эталон | `data/conformance/rules-0.3.json` в репозитории scoring, копия `tests/AlfaCredit.UnitTests/Scoring/conformance-rules-0.3.json`: 63 случая (5 демо-заявок, 10 с пропусками данных, 48 на границах порогов), для каждого запрос и полный ожидаемый ответ |
+| Проверка | `ScoringConformanceTests` (C#) и `tests/test_conformance.py` (Python) гоняют один файл; CI backend дополнительно поднимает образ сервиса из compose и сверяет его ответ на демо-заявке с эталоном |
+| Изменение правил | новая версия (`rules-0.4`) одновременно в обоих репозиториях: пересборка эталона `python scripts/conformance.py build` в scoring, копия файла в backend, зелёные тесты с обеих сторон, новый тег образа в `docker-compose.yml` |
+
 ## Что нужно от сервиса для сдачи
 
-- Dockerfile и сервис `scoring` в `docker-compose.yml` (уже есть, достаточно заменить содержимое `scoring/`), без платных API и закрытых моделей.
-- `GET /health` для healthcheck, запуск без GPU на обычном ПК.
-- Модель с открытыми весами, если используется LLM; классический ML без ограничений.
-- Версии зависимостей зафиксированы (`requirements.txt` с версиями или lock-файл), базовый образ с точным тегом.
-- Описание признаков и логики в `README` сервиса: жюри оценивает объяснимость.
+- Образ `ghcr.io/uandrosova07-arch/scoring` с тегом коммита в `docker-compose.yml` (`SCORING_IMAGE`), без платных API и закрытых моделей;
+  Dockerfile и `requirements.txt` с зафиксированными версиями в репозитории scoring.
+- `GET /health` с `model_version` для healthcheck, запуск без GPU на обычном ПК.
+- Модель с открытыми весами, если используется LLM; классический ML и правила без ограничений.
+- Описание признаков и логики в README сервиса: жюри оценивает объяснимость.

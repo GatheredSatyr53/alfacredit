@@ -45,7 +45,7 @@ public sealed class FinancingAdvisorTests
         best.Affordability.Level.ShouldBe(DebtLoadLevel.Moderate);
         best.Affordability.ProfitBasis.ShouldBe(ProfitBasis.NetProfit);
         best.Affordability.Explanation.ShouldContain("48 %");
-        best.Affordability.Explanation.ShouldEndWith("заметная, но посильная нагрузка (30–70 %).");
+        best.Affordability.Explanation.ShouldEndWith("заметная, но посильная нагрузка (30–50 %).");
         best.Funding.ShouldBe(best.Funding with { DecisionPath = FundingPath.Auto, BusinessDays = 1, ExpectedDate = new DateOnly(2026, 10, 26), InTime = true });
         best.Funding.Explanation.ShouldContain("26.10.2026");
         best.Funding.Explanation.ShouldContain("остаётся 20 дней");
@@ -74,12 +74,12 @@ public sealed class FinancingAdvisorTests
 
         var preview = _advisor.Build(company, Catalog, query, Now);
 
-        // Комфортного срока (нагрузка до 30 %) нет; самый короткий с нагрузкой до 70 % у всех четырёх продуктов 6 месяцев
-        preview.Options.ShouldAllBe(o => o.TermMonths == 6 && o.TermSuggested);
+        // Комфортного срока (нагрузка меньше 30 %) нет; берётся самый короткий срок без штрафа в скоринге (нагрузка меньше 50 %)
+        preview.Options.ShouldAllBe(o => o.TermSuggested && o.Affordability.Level == DebtLoadLevel.Moderate);
         preview.Options.ShouldAllBe(o => o.Explanations.Any(e => e.Code == "term_suggested"));
-        preview.Options[0].Product.Code.ShouldBe("credit-line");
-        preview.Options[0].Cost.TotalInterest.ShouldBe(81_969.25m);
-        preview.Options[0].Affordability.DebtLoad.ShouldBe(0.69m);
+        preview.Options.Select(o => (o.Product.Code, o.TermMonths)).ShouldBe([("credit-line", 11), ("working-capital", 12), ("overdraft", 12), ("express", 12)]);
+        preview.Options.ShouldAllBe(o => o.Affordability.DebtLoad <= 0.50m, "нагрузка в ответе округлена до сотых: 0.4988 показывается как 0.50");
+        preview.Options[1].Cost.MonthlyPayment.ShouldBe(138_593.06m, "12 месяцев: тот же платёж, что в демо-заявке");
         preview.Options[0].Explanations.Single(e => e.Code == "term_suggested").Text.ShouldContain("от 6 до 36 мес.");
     }
 
@@ -209,8 +209,9 @@ public sealed class FinancingAdvisorTests
     [Theory]
     [InlineData(7_200_000, 150_000, 0.48, DebtLoadLevel.Moderate)]
     [InlineData(60_000_000, 0, 0.03, DebtLoadLevel.Comfortable)]
+    [InlineData(5_400_000, 150_000, 0.64, DebtLoadLevel.Elevated)]
     [InlineData(100_000, 600_000, 9.99, DebtLoadLevel.High)]
-    public void Debt_load_levels_follow_the_scoring_thresholds(decimal netProfit, decimal monthlyDebtPayments, decimal expectedLoad, DebtLoadLevel expectedLevel)
+    public void Debt_load_levels_follow_the_scoring_bands(decimal netProfit, decimal monthlyDebtPayments, decimal expectedLoad, DebtLoadLevel expectedLevel)
     {
         var company = TestData.Company(netProfit: netProfit, monthlyDebtPayments: monthlyDebtPayments, annualRevenue: 100_000_000);
         var query = new FinancingPreviewQuery(company.Id, 1_500_000, LoanPurpose.WorkingCapital, new DateOnly(2026, 12, 1), 12);
@@ -219,7 +220,24 @@ public sealed class FinancingAdvisorTests
 
         option.Affordability.DebtLoad.ShouldBe(expectedLoad);
         option.Affordability.Level.ShouldBe(expectedLevel);
-        (option.Limitations.Any(l => l.Code == "high_debt_load")).ShouldBe(expectedLevel == DebtLoadLevel.High);
+        option.Limitations.Any(l => l.Code == "high_debt_load").ShouldBe(expectedLevel == DebtLoadLevel.High);
+        option.Limitations.Any(l => l.Code == "elevated_debt_load").ShouldBe(expectedLevel == DebtLoadLevel.Elevated);
+    }
+
+    [Fact]
+    public void Expenses_above_ninety_percent_of_revenue_are_a_limitation()
+    {
+        var zakat = SeedCompanies.ByLogin("client_bad");
+        var romashka = SeedCompanies.ByLogin("client_good");
+        var query = new FinancingPreviewQuery(zakat.Id, 500_000, LoanPurpose.WorkingCapital, new DateOnly(2026, 12, 1), 6);
+
+        var withPenalty = _advisor.Build(zakat, Catalog, query, Now);
+        var without = _advisor.Build(romashka, Catalog, query with { CompanyId = romashka.Id }, Now);
+
+        withPenalty.Options.ShouldNotBeEmpty();
+        withPenalty.Options.ShouldAllBe(o => o.Limitations.Any(l => l.Code == "expense_ratio_high"));
+        withPenalty.Options[0].Limitations.Single(l => l.Code == "expense_ratio_high").Text.ShouldContain("99 %");
+        without.Options.ShouldAllBe(o => o.Limitations.All(l => l.Code != "expense_ratio_high"));
     }
 
     [Fact]

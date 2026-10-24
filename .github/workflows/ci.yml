@@ -35,9 +35,6 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=results.trx" --results-directory TestResults
 
-      - name: Test scoring stub (Python, stdlib only)
-        run: python3 -m unittest discover -s scoring -p "test_*.py" -v
-
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -66,12 +63,24 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build scoring image
-        uses: docker/build-push-action@v6
-        with:
-          context: scoring
-          file: scoring/Dockerfile
-          push: false
-          tags: alfacredit-scoring:ci
-          cache-from: type=gha,scope=scoring
-          cache-to: type=gha,mode=max,scope=scoring
+      # Образ сервиса скоринга из compose отвечает по контракту: health с rules-0.3 и демо-запрос «Ромашки» из общего эталона
+      - name: Check scoring image contract
+        run: |
+          IMAGE=$(grep -o 'ghcr.io/[^} ]*' docker-compose.yml | head -1)
+          echo "scoring image: $IMAGE"
+          docker run -d --name scoring -p 8000:8000 "$IMAGE"
+          for i in $(seq 1 30); do curl -fsS http://localhost:8000/health && break; sleep 1; done
+          python3 - <<'PY'
+          import json, urllib.request
+          health = json.load(urllib.request.urlopen("http://localhost:8000/health", timeout=5))
+          assert health.get("model_version") == "rules-0.3", health
+          cases = json.load(open("tests/AlfaCredit.UnitTests/Scoring/conformance-rules-0.3.json", encoding="utf-8"))["cases"]
+          case = next(c for c in cases if c["id"] == "demo-good")
+          req = urllib.request.Request("http://localhost:8000/api/v1/score", data=json.dumps(case["input"]).encode(), headers={"Content-Type": "application/json"})
+          body = json.load(urllib.request.urlopen(req, timeout=10))
+          expected = case["expected"]
+          assert (body["score"], body["risk_grade"], body["model_version"]) == (expected["score"], expected["risk_grade"], expected["model_version"]), body
+          assert body["factors"] == expected["factors"] and body["warnings"] == expected["warnings"] and body["missing_data"] == expected["missing_data"], body
+          print("scoring image ok:", body["model_version"], body["score"], body["risk_grade"])
+          PY
+          docker rm -f scoring

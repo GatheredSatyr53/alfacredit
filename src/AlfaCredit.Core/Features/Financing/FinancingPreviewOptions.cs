@@ -24,7 +24,11 @@ public sealed class FinancingPreviewOptions
     [Range(0.01, 1)]
     public decimal ComfortableDebtLoad { get; set; } = 0.30m;
 
-    /// <summary>Доля месячной прибыли, выше которой нагрузка считается высокой.</summary>
+    /// <summary>Доля месячной прибыли, с которой нагрузка считается повышенной: в правилах скоринга rules-0.3 начинается штраф.</summary>
+    [Range(0.01, 10)]
+    public decimal ElevatedDebtLoad { get; set; } = 0.50m;
+
+    /// <summary>Доля месячной прибыли, с которой нагрузка считается высокой: в правилах скоринга rules-0.3 максимальный штраф.</summary>
     [Range(0.01, 10)]
     public decimal HighDebtLoad { get; set; } = 0.70m;
 

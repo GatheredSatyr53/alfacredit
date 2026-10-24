@@ -3,17 +3,20 @@ using AlfaCredit.Core.Domain.Products;
 
 namespace AlfaCredit.Core.Features.Financing;
 
-/// <summary>Уровень кредитной нагрузки: доля платежей по кредитам в месячной прибыли.</summary>
+/// <summary>Уровень кредитной нагрузки: доля платежей по кредитам в месячной прибыли. Банды те же, что у фактора debt_load правил скоринга rules-0.3.</summary>
 public enum DebtLoadLevel
 {
-    /// <summary>Меньше порога комфортной нагрузки (30 %).</summary>
+    /// <summary>Меньше 30 %: в скоринге +10 баллов.</summary>
     Comfortable = 1,
 
-    /// <summary>Между порогами (30–70 %): заметная, но посильная.</summary>
+    /// <summary>30–50 %: заметная, но посильная, в скоринге 0 баллов.</summary>
     Moderate = 2,
 
-    /// <summary>Выше верхнего порога (70 %) или прибыли нет.</summary>
-    High = 3,
+    /// <summary>50–70 %: оценка риска снижается (−10 баллов).</summary>
+    Elevated = 3,
+
+    /// <summary>70 % и больше или прибыли нет: максимальный штраф (−25 баллов), возможен отказ или снижение суммы.</summary>
+    High = 4,
 }
 
 /// <summary>Откуда взята месячная прибыль для расчёта нагрузки.</summary>

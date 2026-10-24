@@ -107,7 +107,8 @@ public sealed class ApplicationPipelineTests
     [Fact]
     public async Task Large_amount_goes_to_manual_review_with_recommendation()
     {
-        var application = Submit(amount: 8_000_000, termMonths: 24, revenue: 180_000_000, netProfit: 16_000_000, monthlyDebtPayments: 1_200_000);
+        // Данные ООО «Вектор» из seed: расходы 160 млн (89 % выручки), без штрафа за расходы грейд B и рекомендация одобрить
+        var application = Submit(amount: 8_000_000, termMonths: 24, revenue: 180_000_000, netProfit: 16_000_000, monthlyDebtPayments: 1_200_000, annualExpenses: 160_000_000);
 
         await RunPipelineAsync(application);
 
@@ -222,9 +223,9 @@ public sealed class ApplicationPipelineTests
         interrupted.Attempts.ShouldBe(1, "прерывание не считается неудачной попыткой");
     }
 
-    private CreditApplication Submit(decimal amount, int termMonths, decimal revenue = 48_000_000, decimal? netProfit = 7_200_000, decimal monthlyDebtPayments = 150_000)
+    private CreditApplication Submit(decimal amount, int termMonths, decimal revenue = 48_000_000, decimal? netProfit = 7_200_000, decimal monthlyDebtPayments = 150_000, decimal? annualExpenses = null)
     {
-        var company = TestData.Company(memberUserId: _clientId, annualRevenue: revenue, netProfit: netProfit, monthlyDebtPayments: monthlyDebtPayments);
+        var company = TestData.Company(memberUserId: _clientId, annualRevenue: revenue, netProfit: netProfit, monthlyDebtPayments: monthlyDebtPayments, annualExpenses: annualExpenses);
         var application = CreditApplication.Create(company, TestData.Product(), _clientId, amount, termMonths, LoanPurpose.WorkingCapital, null, TestData.Now);
         _applications.Add(application);
         _jobs.Add(ProcessingJob.Create(application.Id, ProcessingStage.Validate, TestData.Now, TimeSpan.Zero));

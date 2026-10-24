@@ -92,7 +92,8 @@ public sealed class FinancingEndpointsTests(ApiFactory factory)
         var suggested = await good.PostAsJsonAsync("/api/financing/preview", new { companyId = goodCompany, amount = 1_500_000, purpose = "WorkingCapital", needByDate = Today(30) });
         suggested.StatusCode.ShouldBe(HttpStatusCode.OK);
         var options = (await suggested.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("options").EnumerateArray().ToList();
-        options.ShouldAllBe(o => o.GetProperty("termSuggested").GetBoolean() && o.GetProperty("termMonths").GetInt32() == 6);
+        options.ShouldAllBe(o => o.GetProperty("termSuggested").GetBoolean() && o.GetProperty("termMonths").GetInt32() >= 11 && o.GetProperty("termMonths").GetInt32() <= 12);
+        options.ShouldAllBe(o => o.GetProperty("affordability").GetProperty("level").GetString() == "Moderate");
 
         using var young = await factory.CreateClient().LoginAsAsync("client_new");
         var youngCompany = await young.GetFirstCompanyIdAsync();

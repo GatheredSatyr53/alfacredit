@@ -29,7 +29,7 @@
 |---|---|---|---|
 | mcr.microsoft.com/dotnet/sdk, /aspnet | 10.0.402, 10.0.13 | MIT (образ), Debian (базовая ОС) | Сборка и запуск API |
 | postgres (Docker Official Image) | 16.15-alpine | PostgreSQL License | База данных |
-| python (Docker Official Image) | 3.13.16-slim | PSF License (Python), Debian (базовая ОС) | Сервис скоринга: заглушка `scoring/` на стандартной библиотеке, без внешних пакетов |
+| ghcr.io/uandrosova07-arch/scoring (сервис скоринга команды, репозиторий uandrosova07-arch/scoring) | коммит 4ce9e84, правила `rules-0.3` | компонент команды; внутри образа python 3.12-slim (PSF License), FastAPI 0.115.6 (MIT), uvicorn 0.34.0 (BSD-3-Clause), pydantic 2.10.4 (MIT) | Сервис скоринга, контейнер `scoring` в compose; те же правила встроены в API как резервная модель |
 | GitHub Actions: actions/checkout, actions/setup-dotnet, actions/upload-artifact, docker/setup-buildx-action, docker/build-push-action | v4, v4, v4, v3, v6 | MIT / Apache-2.0 | CI |
 
 ## Модели и датасеты
@@ -52,5 +52,6 @@
 | Выдача средств | Платёжное поручение и перевод на расчётный счёт без реальных операций |
 
 Симуляторы ЕГРЮЛ, ФНС, БКИ и ФССП реализованы в `src/AlfaCredit.Infrastructure/Simulators`: детерминированные
-данные по ИНН, настраиваемая задержка и вероятность сбоя. Внешний сервис скоринга вызывается по контракту
-`docs/scoring-contract.md` только в режиме `Scoring__Mode=External`; по умолчанию работает встроенная балльная модель.
+данные по ИНН, настраиваемая задержка и вероятность сбоя. Сервис скоринга (образ команды ML, правила `rules-0.3`)
+вызывается по контракту `docs/scoring-contract.md` в режиме `Scoring__Mode=External` (так настроен compose); при `Rules`
+или недоступности сервиса работает встроенная модель по тем же правилам.

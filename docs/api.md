@@ -272,7 +272,7 @@
     ],
     "warnings": [],
     "missingData": [],
-    "modelVersion": "stub-rules-1.0",
+    "modelVersion": "rules-0.3",
     "source": "External",
     "requestId": "01a1a7e9-5c0b-7d4e-9b2a-3f1c2d4e5f60",
     "durationMs": 48,
@@ -284,8 +284,8 @@
 | Поле | Что означает |
 |---|---|
 | `source` | `External`: посчитал сервис скоринга; `RulesFallback`: сервис был недоступен, посчитала встроенная модель; `Rules`: режим без внешнего сервиса |
-| `modelVersion` | версия модели из ответа сервиса (или `rules-v1`), сохраняется для воспроизводимости |
-| `warnings` | предупреждения модели: `net_profit_missing`, `credit_bureau_missing`, `external_scoring_unavailable` и т.п. |
+| `modelVersion` | версия правил из ответа (`rules-0.3`: сервис и встроенная модель считают по одним правилам), сохраняется для воспроизводимости |
+| `warnings` | предупреждения модели: `expenses_missing`, `net_profit_missing`, `credit_bureau_missing`, `external_scoring_unavailable` и т.п. |
 | `missingData` | каких входов не хватало, пути полей запроса к скорингу: `company.financials.net_profit_rub`, `checks.credit_bureau` |
 | `requestId`, `durationMs`, `computedAt` | идентификатор запроса к сервису (по нему расчёт ищется в логах сервиса), длительность и момент расчёта |
 
