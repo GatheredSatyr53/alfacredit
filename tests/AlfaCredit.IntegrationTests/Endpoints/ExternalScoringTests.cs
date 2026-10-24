@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using AlfaCredit.Core.Features.Scoring;
 using AlfaCredit.IntegrationTests.Infrastructure;
 using Shouldly;
 
@@ -75,7 +76,7 @@ public sealed class ExternalScoringTests(ExternalScoringApiFactory factory)
             var bankView = await manager.GetFromJsonAsync<JsonElement>($"/api/applications/{id}");
             var scoring = bankView.GetProperty("scoring");
             scoring.GetProperty("source").GetString().ShouldBe("RulesFallback");
-            scoring.GetProperty("modelVersion").GetString().ShouldBe("rules-v1");
+            scoring.GetProperty("modelVersion").GetString().ShouldBe(RuleBasedScoringService.ModelVersion);
             scoring.GetProperty("warnings").EnumerateArray().Select(w => w.GetString()).ShouldContain("external_scoring_unavailable");
             scoring.GetProperty("grade").GetString().ShouldBe("A");
         }

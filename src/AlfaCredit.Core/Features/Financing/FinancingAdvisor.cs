@@ -26,6 +26,9 @@ public sealed class FinancingAdvisor(FinancingPreviewOptions options, DecisionPo
     /// <summary>Грейд, задающий верхнюю границу ставки при автоматическом одобрении.</summary>
     public const RiskGrade MaxAutoApprovalGrade = RiskGrade.C;
 
+    /// <summary>Доля расходов в выручке, выше которой правила скоринга rules-0.3 снижают оценку (фактор expense_ratio).</summary>
+    public const decimal ExpenseRatioHigh = 0.90m;
+
     private readonly FinancingPreviewOptions _options = options ?? throw new ArgumentNullException(nameof(options));
     private readonly DecisionPolicyOptions _policy = policy ?? throw new ArgumentNullException(nameof(policy));
 
@@ -123,15 +126,18 @@ public sealed class FinancingAdvisor(FinancingPreviewOptions options, DecisionPo
             Requirements(company, product, query).ToList());
     }
 
-    /// <summary>Самый короткий срок с комфортной нагрузкой, иначе с посильной, иначе максимальный срок продукта.</summary>
+    /// <summary>
+    /// Самый короткий срок с комфортной нагрузкой; иначе самый короткий без штрафа в скоринге (меньше 50 %); иначе меньше 70 %;
+    /// иначе максимальный срок продукта. Границы строгие, как в банде фактора debt_load.
+    /// </summary>
     private int SuggestTerm(Company company, CreditProduct product, decimal amount)
     {
-        foreach (var threshold in new[] { _options.ComfortableDebtLoad, _options.HighDebtLoad })
+        foreach (var threshold in new[] { _options.ComfortableDebtLoad, _options.ElevatedDebtLoad, _options.HighDebtLoad })
         {
             for (var term = product.MinTermMonths; term <= product.MaxTermMonths; term++)
             {
                 var load = DebtLoad(company, LoanMath.MonthlyPayment(amount, product.BaseRate, term)).Load;
-                if (load is { } value && value <= threshold)
+                if (load is { } value && value < threshold)
                 {
                     return term;
                 }
@@ -191,7 +197,8 @@ public sealed class FinancingAdvisor(FinancingPreviewOptions options, DecisionPo
         {
             null => DebtLoadLevel.High,
             var value when value < _options.ComfortableDebtLoad => DebtLoadLevel.Comfortable,
-            var value when value <= _options.HighDebtLoad => DebtLoadLevel.Moderate,
+            var value when value < _options.ElevatedDebtLoad => DebtLoadLevel.Moderate,
+            var value when value < _options.HighDebtLoad => DebtLoadLevel.Elevated,
             _ => DebtLoadLevel.High,
         };
 
@@ -212,8 +219,9 @@ public sealed class FinancingAdvisor(FinancingPreviewOptions options, DecisionPo
             var levelText = level switch
             {
                 DebtLoadLevel.Comfortable => $"комфортная нагрузка (меньше {Percent(_options.ComfortableDebtLoad)})",
-                DebtLoadLevel.Moderate => $"заметная, но посильная нагрузка ({PercentValue(_options.ComfortableDebtLoad)}–{Percent(_options.HighDebtLoad)})",
-                _ => $"высокая нагрузка (больше {Percent(_options.HighDebtLoad)}), возможен отказ или снижение суммы",
+                DebtLoadLevel.Moderate => $"заметная, но посильная нагрузка ({PercentValue(_options.ComfortableDebtLoad)}–{Percent(_options.ElevatedDebtLoad)})",
+                DebtLoadLevel.Elevated => $"повышенная нагрузка ({PercentValue(_options.ElevatedDebtLoad)}–{Percent(_options.HighDebtLoad)}): оценка риска снижается, условия могут быть хуже",
+                _ => $"высокая нагрузка ({Percent(_options.HighDebtLoad)} и больше), возможен отказ или снижение суммы",
             };
             explanation = $"Платёж {Money.FormatRub(monthlyPayment)} вместе с текущими платежами {Money.FormatRub(company.MonthlyDebtPayments)} составит {Percent(load.Value)} месячной прибыли {Money.FormatRub(profit)}: {levelText}.{basisNote}";
         }
@@ -294,6 +302,16 @@ public sealed class FinancingAdvisor(FinancingPreviewOptions options, DecisionPo
         if (query.Amount > cap)
         {
             yield return new PreviewNote("amount_may_be_reduced", $"При среднем уровне риска банк может снизить сумму до {Money.FormatRub(cap)} ({Percent(_policy.MaxAmountShareOfRevenue)} годовой выручки).");
+        }
+
+        if (company.AnnualExpenses is { } expenses && company.AnnualRevenue > 0 && expenses / company.AnnualRevenue > ExpenseRatioHigh)
+        {
+            yield return new PreviewNote("expense_ratio_high", $"Расходы составляют {Percent(expenses / company.AnnualRevenue)} выручки, больше {Percent(ExpenseRatioHigh)}: оценка риска снижается.");
+        }
+
+        if (affordability.Level == DebtLoadLevel.Elevated && affordability.DebtLoad is { } elevated)
+        {
+            yield return new PreviewNote("elevated_debt_load", $"Платёж вместе с текущими обязательствами составит {Percent(elevated)} месячной прибыли: оценка риска снижается, ставка может быть выше.");
         }
 
         if (affordability.Level == DebtLoadLevel.High)

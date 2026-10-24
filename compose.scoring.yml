@@ -1,0 +1,11 @@
+# Сборка сервиса скоринга из локального checkout репозитория scoring вместо образа из GHCR.
+# Репозитории probiinik и scoring лежат рядом (../scoring), иначе путь задаётся в SCORING_SRC.
+#
+#   docker compose -f docker-compose.yml -f compose.scoring.yml up --build -d
+#   curl localhost:8000/health        # "model_version": "rules-0.3"
+services:
+  scoring:
+    build:
+      context: ${SCORING_SRC:-../scoring}
+      dockerfile: Dockerfile
+    image: alfacredit-scoring:local

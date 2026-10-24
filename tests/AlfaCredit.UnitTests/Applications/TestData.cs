@@ -13,7 +13,8 @@ internal static class TestData
         Guid? memberUserId = null,
         decimal annualRevenue = 48_000_000,
         decimal? netProfit = 7_200_000,
-        decimal monthlyDebtPayments = 150_000)
+        decimal monthlyDebtPayments = 150_000,
+        decimal? annualExpenses = null)
     {
         var company = Core.Domain.Companies.Company.Create(
             inn,
@@ -26,7 +27,8 @@ internal static class TestData
             "Иванова Мария Сергеевна",
             TaxRegime.Osno,
             annualRevenue,
-            annualRevenue - (netProfit ?? 0),
+            // Без явных расходов они выводятся из прибыли; у seed-компаний расходы заданы отдельно (ООО «Вектор»: 160 млн при прибыли 16 млн)
+            annualExpenses ?? annualRevenue - (netProfit ?? 0),
             netProfit,
             monthlyDebtPayments,
             24,

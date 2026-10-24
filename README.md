@@ -10,8 +10,8 @@
 > Результат: одобрение с предложением, одобрение с изменёнными условиями, отказ с объяснением причин
 > или передача менеджеру. Клиент принимает или отклоняет предложение, видит ленту событий,
 > получает обновления в реальном времени через SignalR. Скоринг считает отдельный сервис (контейнер `scoring`,
-> контракт в [docs/scoring-contract.md](docs/scoring-contract.md); сейчас это заглушка по контракту, её заменит
-> модель ML-команды), при его недоступности backend считает встроенной моделью и помечает результат `RulesFallback`.
+> контракт в [docs/scoring-contract.md](docs/scoring-contract.md); сервис ML-команды с правилами `rules-0.3`),
+> при его недоступности backend считает встроенной моделью по тем же правилам и помечает результат `RulesFallback`.
 > После принятия предложения формируется договор с графиком платежей и печатной формой, клиент подписывает его кодом
 > подтверждения из ленты событий (имитация SMS), симулятор банковского ядра зачисляет средства, и заявка завершается
 > статусом «Средства выданы» ([docs/completion-flow.md](docs/completion-flow.md)). Заявки, переданные менеджеру,
@@ -25,7 +25,7 @@
 | Web API | `src/AlfaCredit.Api` | ASP.NET Core MVC: контроллеры, DTO, JWT, Swagger, SignalR-хаб, health checks, обработка ошибок |
 | Домен и сценарии | `src/AlfaCredit.Core` | Сущности, state machine заявки, конвейер обработки, балльный скоринг, кредитная политика, лента, порты. Без зависимостей от EF и ASP.NET |
 | Инфраструктура | `src/AlfaCredit.Infrastructure` | EF Core + PostgreSQL, миграции, репозитории, seed, симуляторы внешних источников, HTTP-клиент внешнего скоринга, фоновый воркер |
-| Сервис скоринга | `scoring/` | Python-заглушка по [контракту](docs/scoring-contract.md): `GET /health`, `POST /api/v1/score`; отдельный контейнер, заменяется сервисом ML-команды без изменений в backend |
+| Сервис скоринга | образ `ghcr.io/uandrosova07-arch/scoring` (репозиторий ML-команды) | Правила `rules-0.3` по [контракту](docs/scoring-contract.md): `GET /health`, `POST /api/v1/score`; отдельный контейнер. Те же правила встроены в backend как резервная модель; общий эталон из 63 случаев проходят тесты с обеих сторон |
 | Тесты | `tests/AlfaCredit.UnitTests`, `tests/AlfaCredit.IntegrationTests` | xUnit; интеграционные тесты поднимают PostgreSQL через Testcontainers и прогоняют конвейер целиком, в том числе с заглушкой внешнего скоринга |
 
 Зависимости направлены внутрь: `Api → Core ← Infrastructure`.
@@ -82,7 +82,6 @@ docker compose up -d db scoring              # PostgreSQL и сервис ско
 dotnet restore
 dotnet run --project src/AlfaCredit.Api      # http://localhost:5080/swagger
 dotnet test                                  # unit + интеграционные (последние требуют Docker, иначе пропускаются)
-python3 -m unittest discover -s scoring -p "test_*.py"   # тесты заглушки скоринга
 ```
 
 При `dotnet run` по умолчанию работает встроенная модель (`Scoring:Mode` = `Rules` в `appsettings.json`).
@@ -121,6 +120,7 @@ Compose читает `.env` из корня (образец: `.env.example`). У
 | | `Processing__LeaseSeconds` | `120` | Аренда задания воркером; по её истечении зависшее задание заберёт другой цикл |
 | `SCORING_MODE` | `Scoring__Mode` | `External` (compose), `Rules` (`dotnet run`) | `External`: сервис по [контракту](docs/scoring-contract.md) с откатом на встроенную модель; `Rules`: только встроенная балльная модель |
 | `SCORING_BASE_URL` | `Scoring__BaseUrl` | `http://scoring:8000` | Адрес сервиса скоринга (имя сервиса в compose) |
+| `SCORING_IMAGE` | | `ghcr.io/uandrosova07-arch/scoring:4ce9e84…` | Образ сервиса скоринга ML-команды (правила `rules-0.3`), тег закреплён на коммите репозитория scoring; сборка из локального checkout: `compose.scoring.yml` |
 | `SCORING_TIMEOUT_SECONDS` | `Scoring__TimeoutSeconds` | `5` | Таймаут одного запроса к скорингу |
 | `SCORING_RETRIES` | `Scoring__Retries` | `2` | Повторы при 5xx, таймауте и обрыве связи (паузы `Scoring__RetryDelayMs` × номер попытки: 1 с, 2 с); 4xx не повторяется |
 | `SCORING_PORT` | | `8000` | Порт сервиса скоринга на хосте, только для отладки |
@@ -129,7 +129,7 @@ Compose читает `.env` из корня (образец: `.env.example`). У
 | `DEMO_MANAGER_ENABLED` | `DemoManager__Enabled` | `true` | Демо-режим: заявки в ручном рассмотрении получают смоделированный ответ менеджера; выключить при появлении настоящей очереди менеджера |
 | `DEMO_MANAGER_DELAY_SECONDS`, `DEMO_MANAGER_APPROVAL_PROBABILITY` | `DemoManager__DelaySeconds`, `DemoManager__ApprovalProbability` | `8`, `0.5` | Пауза до ответа смоделированного менеджера и вероятность одобрения (50/50) |
 | | `FinancingPreview__AutoDecisionBusinessDays`, `FinancingPreview__ManualReviewBusinessDays`, `FinancingPreview__CollateralBusinessDays` | `1`, `3`, `10` | Ориентир получения денег в рабочих днях для предварительного подбора: автоматическое решение, менеджер, залог |
-| | `FinancingPreview__ComfortableDebtLoad`, `FinancingPreview__HighDebtLoad`, `FinancingPreview__MaxNeedByDays` | `0.30`, `0.70`, `730` | Пороги кредитной нагрузки (доля месячной прибыли) и горизонт даты `needByDate` |
+| | `FinancingPreview__ComfortableDebtLoad`, `FinancingPreview__ElevatedDebtLoad`, `FinancingPreview__HighDebtLoad`, `FinancingPreview__MaxNeedByDays` | `0.30`, `0.50`, `0.70`, `730` | Пороги кредитной нагрузки (доля месячной прибыли, банды фактора `debt_load` правил `rules-0.3`) и горизонт даты `needByDate` |
 | | `Contracts__SigningDays`, `Contracts__CodeTtlMinutes`, `Contracts__CodeMaxAttempts`, `Contracts__LenderName` | `5`, `10`, `5`, `AlfaCredit (демонстрационный банк)` | Срок подписания договора, срок и число попыток кода, наименование кредитора в договоре |
 
 Секреты в репозитории не хранятся: в `appsettings.json` ключ JWT пустой, для `dotnet run` он берётся из
@@ -159,7 +159,7 @@ Seed повторяем: при каждом старте добавляются
 1. `docker compose up --build`: поднимаются `db`, `scoring` и `api`; дождаться строк `Now listening on: http://[::]:8080`
    и `Processing worker started`.
 2. Открыть http://localhost:8080/health/ready: статус `Healthy`, проверки `database` и `scoring` в списке;
-   http://localhost:8000/health отвечает `{"status":"ok","model_version":"stub-rules-1.0"}`.
+   http://localhost:8000/health отвечает 200 с `model_version` = `rules-0.3` (сервис ML-команды).
 3. В Swagger выполнить `POST /api/auth/login` с телом `{"login": "client_good", "password": "Demo123!"}`,
    нажать Authorize и вставить `accessToken`.
 4. `GET /api/companies`: ООО «Ромашка», скопировать `id`.
@@ -167,7 +167,7 @@ Seed повторяем: при каждом старте добавляются
    `{"companyId": "<id>", "amount": 1500000, "purpose": "WorkingCapital", "needByDate": "<дата через 3 недели>", "termMonths": 12}`:
    ответ `200` с четырьмя вариантами (первый `isRecommended`: «Кредитная линия», платёж 137 877,18 ₽, переплата 154 526,12 ₽,
    деньги ориентировочно на следующий рабочий день), «Инвестиционный кредит» в `unsuitable` с причиной по цели. Заявка при этом не создаётся.
-   Без `termMonths` срок подбирается (6 мес. при посильной нагрузке), под `client_new` ответ без вариантов с объяснением «возраст бизнеса».
+   Без `termMonths` срок подбирается (11–12 мес.: самый короткий без штрафа за нагрузку в скоринге), под `client_new` ответ без вариантов с объяснением «возраст бизнеса».
 6. `POST /api/applications` с телом
    `{"companyId": "<id>", "productCode": "working-capital", "amount": 1500000, "termMonths": 12, "purpose": "WorkingCapital", "needByDate": "<та же дата>"}`
    (или `options[].applyWith` из предыдущего шага): ответ `201` с `id` и номером `AC-000001`; `needByDate` необязательно.
@@ -197,12 +197,13 @@ Seed повторяем: при каждом старте добавляются
     или «Отказ» с объяснением. В `decision` будет `decidedBy` = `Manager`, `isSimulated` = `true`, в `history` запись
     «Смоделированный ответ менеджера (демо-режим)». После `docker compose restart api` решение не меняется.
 16. Войти как `manager`: `GET /api/applications/{id}` любой заявки показывает `scoring` с баллом, грейдом, факторами,
-    `source` = `External`, `modelVersion` = `stub-rules-1.0`, `missingData`, `requestId` и `durationMs`,
+    `source` = `External`, `modelVersion` = `rules-0.3`, `missingData`, `requestId` и `durationMs`,
     а также `checks` с результатами четырёх источников; `GET /api/feed` содержит событие о новой заявке в очереди.
     В логе `scoring` виден запрос с тем же `request_id`.
 17. Недоступность скоринга: `docker compose stop scoring`, затем подать заявку от `client_good` (`express`, 300 000 ₽ на 6 мес).
     Заявка не зависает: через несколько секунд (таймаут и два повтора) она одобрена, у менеджера в `scoring`
-    `source` = `RulesFallback` и предупреждение `external_scoring_unavailable`, в `/health/ready` проверка `scoring`
+    `source` = `RulesFallback`, `modelVersion` = `rules-0.3` (встроенная модель считает по тем же правилам, балл и грейд те же)
+    и предупреждение `external_scoring_unavailable`, в `/health/ready` проверка `scoring`
     в статусе `Degraded`. `docker compose start scoring` возвращает внешний скоринг.
 18. Перезапуск посреди обработки: подать заявку и в течение пары секунд выполнить `docker compose restart api`.
     После старта в логе `Requeued 1 job(s) interrupted by the previous shutdown`, заявка доходит до решения,
@@ -246,12 +247,12 @@ Seed повторяем: при каждом старте добавляются
 
 ```
 ├─ src/                 Api, Core, Infrastructure
-├─ scoring/             сервис скоринга: заглушка по контракту (Python, stdlib), Dockerfile, тесты
+├─ compose.scoring.yml  override: сборка сервиса скоринга из локального checkout репозитория scoring вместо образа из GHCR
 ├─ tests/               UnitTests, IntegrationTests
 ├─ docs/                api.md, financing-preview.md, completion-flow.md, state-machine.md, decision-logic.md, data-model.md, scoring-contract.md, openapi.json, requests.http, postman_collection.json, backend-plan.md
 ├─ .github/workflows/   CI: restore в locked-mode, build, test, docker build
 ├─ Dockerfile           multi-stage сборка API, non-root runtime
-├─ docker-compose.yml   db + scoring + api
+├─ docker-compose.yml   db + scoring (образ ML-команды, правила rules-0.3) + api
 ├─ Directory.Build.props, Directory.Packages.props, global.json   фиксация настроек и версий
 └─ THIRD_PARTY_NOTICES.md
 ```

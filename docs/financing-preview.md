@@ -66,9 +66,9 @@ sequenceDiagram
 
 ```json
 {
-  "calculatedAt": "2026-10-23T21:00:22.4371762+00:00",
+  "calculatedAt": "2026-10-24T10:44:41.0363416+00:00",
   "company": {
-    "id": "01a1681b-af21-7f3c-9090-2fedb48bbc20",
+    "id": "01a16d82-bea0-7edd-9a95-4a3900d0cb9c",
     "name": "ООО «Ромашка»",
     "inn": "7701234567",
     "businessAgeMonths": 91
@@ -77,7 +77,7 @@ sequenceDiagram
     "amount": 1500000,
     "purpose": "WorkingCapital",
     "purposeTitle": "Пополнение оборотных средств",
-    "needByDate": "2026-11-15",
+    "needByDate": "2026-11-16",
     "daysUntilNeeded": 23,
     "termMonths": 12
   },
@@ -111,14 +111,14 @@ sequenceDiagram
         "debtLoad": 0.48,
         "level": "Moderate",
         "profitBasis": "NetProfit",
-        "explanation": "Платёж 137 877 ₽ вместе с текущими платежами 150 000 ₽ составит 48 % месячной прибыли 600 000 ₽: заметная, но посильная нагрузка (30–70 %)."
+        "explanation": "Платёж 137 877 ₽ вместе с текущими платежами 150 000 ₽ составит 48 % месячной прибыли 600 000 ₽: заметная, но посильная нагрузка (30–50 %)."
       },
       "funding": {
         "decisionPath": "Auto",
         "businessDays": 1,
         "expectedDate": "2026-10-26",
         "inTime": true,
-        "explanation": "Решение принимается автоматически, сумма в пределах лимита 5 000 000 ₽: деньги ориентировочно 26.10.2026, до нужной даты 15.11.2026 остаётся 20 дней."
+        "explanation": "Решение принимается автоматически, сумма в пределах лимита 5 000 000 ₽: деньги ориентировочно 26.10.2026, до нужной даты 16.11.2026 остаётся 21 день."
       },
       "explanations": [
         {
@@ -155,12 +155,12 @@ sequenceDiagram
         }
       ],
       "applyWith": {
-        "companyId": "01a1681b-af21-7f3c-9090-2fedb48bbc20",
+        "companyId": "01a16d82-bea0-7edd-9a95-4a3900d0cb9c",
         "productCode": "credit-line",
         "amount": 1500000,
         "termMonths": 12,
         "purpose": "WorkingCapital",
-        "needByDate": "2026-11-15"
+        "needByDate": "2026-11-16"
       }
     },
     {
@@ -212,12 +212,12 @@ sequenceDiagram
         "…"
       ],
       "applyWith": {
-        "companyId": "01a1681b-af21-7f3c-9090-2fedb48bbc20",
+        "companyId": "01a16d82-bea0-7edd-9a95-4a3900d0cb9c",
         "productCode": "working-capital",
         "amount": 1500000,
         "termMonths": 12,
         "purpose": "WorkingCapital",
-        "needByDate": "2026-11-15"
+        "needByDate": "2026-11-16"
       }
     }
   ],
@@ -263,7 +263,7 @@ sequenceDiagram
 | `affordability.monthlyProfit` | месячная прибыль компании, по которой считается нагрузка, ₽ |
 | `affordability.currentDebtPayments` | текущие ежемесячные платежи по кредитам и лизингу из карточки компании, ₽ |
 | `affordability.debtLoad` | (текущие платежи + новый платёж) / месячная прибыль, доля с двумя знаками, не больше 9.99; `null`, если прибыли нет |
-| `affordability.level` | `Comfortable` (< 30 %), `Moderate` (30–70 %), `High` (> 70 % или нет прибыли) |
+| `affordability.level` | `Comfortable` (< 30 %), `Moderate` (30–50 %), `Elevated` (50–70 %: оценка риска снижается), `High` (≥ 70 % или нет прибыли). Те же банды, что у фактора `debt_load` правил скоринга `rules-0.3` (+10 / 0 / −10 / −25 баллов) |
 | `affordability.profitBasis` | откуда прибыль: `NetProfit` (чистая прибыль за 12 мес.), `RevenueMinusExpenses` (выручка минус расходы), `RevenueEstimate` (прибыль и расходы неизвестны: принято 10 % выручки) |
 | `affordability.explanation` | фраза для клиента |
 | `funding.decisionPath` | `Auto`: сумма в лимите автоодобрения и залог не нужен; `ManualReview`: решение принимает менеджер |
@@ -271,7 +271,7 @@ sequenceDiagram
 | `funding.inTime` | `expectedDate` не позже `needByDate` |
 | `funding.explanation` | фраза для клиента: почему такой срок и успеваем ли |
 | `explanations[]` | почему вариант подходит и что в нём важно: `product_about`, `no_collateral`, `auto_decision`, `term_suggested`, `data_prefilled`, `cheapest` (у варианта с минимальной переплатой) |
-| `limitations[]` | что может изменить условия или срок: `rate_depends_on_risk`, `manual_review_amount`, `collateral_required`, `amount_may_be_reduced` (сумма выше 25 % годовой выручки), `high_debt_load`, `deadline_missed` |
+| `limitations[]` | что может изменить условия или срок: `rate_depends_on_risk`, `manual_review_amount`, `collateral_required`, `amount_may_be_reduced` (сумма выше 25 % годовой выручки), `expense_ratio_high` (расходы больше 90 % выручки), `elevated_debt_load`, `high_debt_load`, `deadline_missed` |
 | `requirements[]` | что нужно для оформления: `credit_history_consent`, `financials_required` (расходы и прибыль за 12 мес. для сумм выше 3 000 000 ₽ и продуктов «Кредитная линия», «Инвестиционный», если их нет в карточке), `collateral_documents` |
 | `applyWith` | готовое тело для `POST /api/applications`: продукт, сумма, срок, цель и `needByDate`; интерфейс отправляет его без изменений |
 
@@ -293,9 +293,9 @@ sequenceDiagram
 
 ```json
 {
-  "calculatedAt": "2026-10-23T21:00:22.9212138+00:00",
+  "calculatedAt": "2026-10-24T10:44:41.4332537+00:00",
   "company": {
-    "id": "01a1681b-af48-7187-a0ec-24fc243564e5",
+    "id": "01a16d82-bec9-7cca-9349-944589235d86",
     "name": "ИП Петрова Елена Викторовна",
     "inn": "772812345678",
     "businessAgeMonths": 4
@@ -304,7 +304,7 @@ sequenceDiagram
     "amount": 500000,
     "purpose": "WorkingCapital",
     "purposeTitle": "Пополнение оборотных средств",
-    "needByDate": "2026-12-01",
+    "needByDate": "2026-12-02",
     "daysUntilNeeded": 39,
     "termMonths": null
   },
@@ -414,7 +414,7 @@ sequenceDiagram
         "businessDays": 1,
         "expectedDate": "2026-10-26",
         "inTime": true,
-        "explanation": "Решение принимается автоматически, сумма в пределах лимита 5 000 000 ₽: деньги ориентировочно 26.10.2026, до нужной даты 02.11.2026 остаётся 7 дней."
+        "explanation": "Решение принимается автоматически, сумма в пределах лимита 5 000 000 ₽: деньги ориентировочно 26.10.2026, до нужной даты 03.11.2026 остаётся 8 дней."
       },
       "limitations": [
         {
@@ -465,7 +465,7 @@ sequenceDiagram
         "businessDays": 10,
         "expectedDate": "2026-11-06",
         "inTime": false,
-        "explanation": "Нужен залог, решение принимает менеджер: деньги ориентировочно 06.11.2026, это позже нужной даты 02.11.2026."
+        "explanation": "Нужен залог, решение принимает менеджер: деньги ориентировочно 06.11.2026, это позже нужной даты 03.11.2026."
       },
       "limitations": [
         {
@@ -486,7 +486,7 @@ sequenceDiagram
         },
         {
           "code": "deadline_missed",
-          "text": "Ориентир получения 06.11.2026 позже нужной даты 02.11.2026."
+          "text": "Ориентир получения 06.11.2026 позже нужной даты 03.11.2026."
         }
       ],
       "requirements": [
@@ -551,9 +551,9 @@ sequenceDiagram
 | продукт активен | продукт | `product_inactive` |
 
 **Срок, если не указан.** Для каждого продукта берётся самый короткий срок из его диапазона, при котором нагрузка
-(`affordability.debtLoad`) не выше 30 %; если такого нет, самый короткий с нагрузкой не выше 70 %; если и такого нет,
-максимальный срок продукта (нагрузка остаётся высокой, об этом говорит `high_debt_load`). Короткий срок даёт
-минимальную переплату, порог нагрузки защищает от неподъёмного платежа. Клиент может выбрать любой срок из `termRange`
+(`affordability.debtLoad`) меньше 30 % (комфортная); если такого нет, самый короткий с нагрузкой меньше 50 % (без штрафа
+в скоринге); затем меньше 70 %; если и такого нет, максимальный срок продукта (нагрузка остаётся высокой, об этом говорит
+`high_debt_load`). Короткий срок даёт минимальную переплату, порог нагрузки защищает от неподъёмного платежа и от штрафа в оценке риска. Клиент может выбрать любой срок из `termRange`
 и пересчитать preview с `termMonths`.
 
 **Сортировка и рекомендация.** Сначала варианты с `funding.inTime` = `true`, внутри группы по возрастанию `cost.totalInterest`,
@@ -571,25 +571,29 @@ sequenceDiagram
 - **Диапазон ставки**: `interestRate` = базовая ставка продукта (грейд A, надбавка 0), `maxInterestRate` = базовая + 3 п.п.
   (грейд C, верхняя граница автоматического одобрения; шкала надбавок в `docs/decision-logic.md`).
   Грейды D и E автоматического предложения не получают, поэтому в диапазон не входят.
-- **Нагрузка** (`affordability`): `(текущие платежи по кредитам в месяц + новый платёж) / месячная прибыль`, пороги 30 % и 70 %.
-  Месячная прибыль: чистая прибыль за 12 мес. / 12; если её нет, (выручка − расходы) / 12; если нет и расходов,
-  10 % выручки / 12 (та же оценка, что в резервной балльной модели backend). Нет прибыли (0 или убыток): `debtLoad` = `null`,
-  уровень `High`.
+- **Нагрузка** (`affordability`): `(текущие платежи по кредитам в месяц + новый платёж) / месячная прибыль`, пороги 30, 50 и 70 %
+  как у фактора `debt_load` правил скоринга `rules-0.3`. Месячная прибыль: чистая прибыль за 12 мес. / 12; если её нет,
+  (выручка − расходы) / 12; если нет и расходов, 10 % выручки / 12 (те же правила, что в скоринге). Нет прибыли (0 или убыток):
+  `debtLoad` = `null`, уровень `High`.
+- **Расходы к выручке**: если расходы больше 90 % выручки, в `limitations` есть `expense_ratio_high` (фактор `expense_ratio`
+  правил `rules-0.3`, −10 баллов).
 - **Что может снизить сумму**: при грейде C политика ограничивает сумму 25 % годовой выручки (`DecisionPolicy:MaxAmountShareOfRevenue`);
   если запрошенная сумма больше, в `limitations` есть `amount_may_be_reduced` с рассчитанной границей.
 
-### Согласовать с ML
+### Согласовано с ML (`rules-0.3`)
 
 Preview не вызывает сервис скоринга и не меняет запрос к нему (`docs/scoring-contract.md`, тест байт-в-байт `DemoSeedScoringTests` остаётся в силе;
-`need_by_date` в запрос не передаётся). Для единообразия цифр в кабинете и в скоринге от ML нужно подтверждение трёх вещей:
+`need_by_date` в запрос не передаётся). Цифры в кабинете и в скоринге считаются по одним правилам `rules-0.3`
+(`docs/decision-logic.md`, `docs/calculation.md` в репозитории scoring):
 
-1. Формула платежа: аннуитет `LoanMath.MonthlyPayment` (копия в `scripts/backend_reference.py` сервиса scoring), в preview по базовой ставке продукта.
-2. Кредитная нагрузка: формула `(monthly_debt_payments_rub + новый платёж) / (чистая прибыль / 12)` и пороги 30 % / 70 %
-   взяты из `docs/calculation.md` сервиса scoring (`rules-0.2`). Если ML меняет пороги, их нужно поменять в `FinancingPreview:ComfortableDebtLoad`
-   и `FinancingPreview:HighDebtLoad`.
-3. Прибыль при пропусках: ML считает «выручка − расходы», а при отсутствии расходов отдаёт грейд D; preview в этом случае берёт 10 % выручки
-   (как резервные правила backend) и помечает `profitBasis` = `RevenueEstimate`. Если ML предпочитает не показывать нагрузку
-   без расходов, поле `affordability` можно отдавать `null` для `RevenueEstimate`.
+1. Платёж: аннуитет `LoanMath.MonthlyPayment` по базовой ставке продукта, тот же, что в `estimated_monthly_payment_rub` запроса к скорингу
+   (копия в `scripts/backend_reference.py` сервиса scoring).
+2. Нагрузка: `(текущие платежи + новый платёж) × 12 / годовая прибыль`, банды 30 / 50 / 70 % (`FinancingPreview:ComfortableDebtLoad`,
+   `ElevatedDebtLoad`, `HighDebtLoad`); уровни preview соответствуют вкладам фактора `debt_load` (+10 / 0 / −10 / −25).
+3. Пропуски: прибыль = выручка − расходы, а без расходов 10 % выручки (`profitBasis` = `RevenueEstimate`); нагрузка показывается всегда,
+   отдельного «грейда за нехватку данных» в правилах нет. Расходы больше 90 % выручки дают `expense_ratio_high`.
+
+Изменение порогов делается в обоих репозиториях одновременно: новая версия правил и эталон в scoring, параметры `FinancingPreview` здесь.
 
 ## Ориентир получения денег
 
@@ -634,8 +638,9 @@ Preview не вызывает сервис скоринга и не меняет
 | `FinancingPreview__AutoDecisionBusinessDays` | `1` | рабочих дней до денег при автоматическом решении |
 | `FinancingPreview__ManualReviewBusinessDays` | `3` | то же при рассмотрении менеджером |
 | `FinancingPreview__CollateralBusinessDays` | `10` | то же для продуктов с залогом |
-| `FinancingPreview__ComfortableDebtLoad` | `0.30` | порог «комфортной» нагрузки (доля месячной прибыли) |
-| `FinancingPreview__HighDebtLoad` | `0.70` | порог, выше которого нагрузка «высокая» |
+| `FinancingPreview__ComfortableDebtLoad` | `0.30` | порог «комфортной» нагрузки (доля месячной прибыли); в скоринге +10 баллов |
+| `FinancingPreview__ElevatedDebtLoad` | `0.50` | порог «повышенной» нагрузки; с него в скоринге начинается штраф |
+| `FinancingPreview__HighDebtLoad` | `0.70` | порог «высокой» нагрузки; в скоринге максимальный штраф |
 | `FinancingPreview__MaxNeedByDays` | `730` | насколько далеко вперёд можно указать `needByDate` |
 
 ## Что нужно фронтенду
@@ -663,7 +668,7 @@ export interface FinancingOption {
   termSuggested: boolean
   termRange: { min: number; max: number }
   cost: { interestRate: number; maxInterestRate: number; monthlyPayment: number; maxMonthlyPayment: number; totalPayment: number; totalInterest: number; maxTotalInterest: number }
-  affordability: { monthlyProfit: number; currentDebtPayments: number; debtLoad: number | null; level: 'Comfortable' | 'Moderate' | 'High'; profitBasis: 'NetProfit' | 'RevenueMinusExpenses' | 'RevenueEstimate'; explanation: string }
+  affordability: { monthlyProfit: number; currentDebtPayments: number; debtLoad: number | null; level: 'Comfortable' | 'Moderate' | 'Elevated' | 'High'; profitBasis: 'NetProfit' | 'RevenueMinusExpenses' | 'RevenueEstimate'; explanation: string }
   funding: { decisionPath: 'Auto' | 'ManualReview'; businessDays: number; expectedDate: string; inTime: boolean; explanation: string }
   explanations: PreviewNote[]
   limitations: PreviewNote[]
@@ -694,4 +699,4 @@ export interface FinancingPreview {
 | Локальный стенд | миграция применена к базе с существующими заявками (старые строки получили `NULL`), preview по всем пяти демо-клиентам, заявка из `applyWith`, два перезапуска API: `needByDate` и статус сохраняются, путь обработка → решение → предложение → договор → подписание → выдача пройден на заявке с датой; существующие сценарии завершения, параллельных действий и демо-менеджера прогнаны повторно |
 | Конфигурация | новая секция `FinancingPreview` в `appsettings.json` (таблица выше); значения по умолчанию, в `docker-compose.yml` и `.env` ничего менять не нужно; запрос к сервису скоринга и его контракт не изменились |
 | Фронтенд | `src/types/api.ts`: типы из раздела выше, `needByDate` в `CreateApplicationRequest`, `Application`, `ApplicationSummary`; `httpCreditApi.ts`: метод `previewFinancing(body)` → `POST /api/financing/preview` |
-| ML | подтвердить три пункта раздела «Согласовать с ML»; при изменении порогов нагрузки поменять `FinancingPreview__ComfortableDebtLoad` и `FinancingPreview__HighDebtLoad` |
+| ML | правила `rules-0.3` согласованы (раздел «Согласовано с ML»); изменение порогов нагрузки = новая версия правил в scoring и параметры `FinancingPreview__*` здесь |

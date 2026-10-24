@@ -2135,6 +2135,7 @@
         "enum": [
           "Comfortable",
           "Moderate",
+          "Elevated",
           "High"
         ],
         "type": "string"
@@ -2482,7 +2483,7 @@
             "items": {
               "$ref": "#/components/schemas/PreviewNoteDto"
             },
-            "description": "Что может изменить условия: rate_depends_on_risk, manual_review_amount, collateral_required, amount_may_be_reduced, high_debt_load, deadline_missed."
+            "description": "Что может изменить условия: rate_depends_on_risk, manual_review_amount, collateral_required, amount_may_be_reduced, expense_ratio_high, elevated_debt_load, high_debt_load, deadline_missed."
           },
           "requirements": {
             "type": "array",
