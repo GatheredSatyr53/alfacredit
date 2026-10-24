@@ -26,6 +26,9 @@ public sealed class PipelineEndpointsTests(ApiFactory factory)
         var offer = settled.GetProperty("offer");
         offer.GetProperty("amount").GetDecimal().ShouldBe(1_500_000);
         offer.GetProperty("interestRate").GetDecimal().ShouldBe(19.5m);
+        offer.GetProperty("monthlyPayment").GetDecimal().ShouldBe(138_593.06m);
+        offer.GetProperty("totalPayment").GetDecimal().ShouldBe(1_663_116.74m, "итоги по фактическим условиям видны до принятия");
+        offer.GetProperty("totalInterest").GetDecimal().ShouldBe(163_116.74m);
         offer.GetProperty("response").GetString().ShouldBe("Pending");
         settled.GetProperty("scoring").ValueKind.ShouldBe(JsonValueKind.Null, "клиент не видит скоринг");
         settled.GetProperty("checks").ValueKind.ShouldBe(JsonValueKind.Null, "клиент не видит сырые проверки");
@@ -38,6 +41,8 @@ public sealed class PipelineEndpointsTests(ApiFactory factory)
         var body = await accepted.Content.ReadFromJsonAsync<JsonElement>();
         body.GetProperty("status").GetProperty("code").GetString().ShouldBe("ContractSigning");
         body.GetProperty("offer").GetProperty("response").GetString().ShouldBe("Accepted");
+        body.GetProperty("contract").GetProperty("totalPayment").GetDecimal().ShouldBe(1_663_116.74m, "договор повторяет итоги предложения");
+        body.GetProperty("contract").GetProperty("totalInterest").GetDecimal().ShouldBe(163_116.74m);
 
         (await client.PostAsync($"/api/applications/{id}/offer/accept", content: null)).StatusCode.ShouldBe(HttpStatusCode.Conflict);
     }
@@ -57,6 +62,10 @@ public sealed class PipelineEndpointsTests(ApiFactory factory)
         decision.GetProperty("interestRate").GetDecimal().ShouldBe(22.5m);
         decision.GetProperty("conditions").GetString().ShouldNotBeNullOrWhiteSpace();
         decision.GetProperty("reasons").EnumerateArray().Select(r => r.GetProperty("code").GetString()).ShouldContain("amount_reduced");
+        var offer = settled.GetProperty("offer");
+        offer.GetProperty("amount").GetDecimal().ShouldBe(2_400_000);
+        offer.GetProperty("totalPayment").GetDecimal().ShouldBe(2_400_000 + offer.GetProperty("totalInterest").GetDecimal(), "итоги по изменённым условиям, не по запрошенной сумме");
+        offer.GetProperty("totalInterest").GetDecimal().ShouldBeInRange(600_000m, 630_000m);
 
         var declined = await client.PostAsJsonAsync($"/api/applications/{id}/offer/decline", new { reason = "Нужна полная сумма" });
         declined.StatusCode.ShouldBe(HttpStatusCode.OK);

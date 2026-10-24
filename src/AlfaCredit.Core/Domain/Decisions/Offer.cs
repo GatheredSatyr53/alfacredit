@@ -1,3 +1,5 @@
+using AlfaCredit.Core.Common;
+
 namespace AlfaCredit.Core.Domain.Decisions;
 
 public enum OfferResponse
@@ -37,7 +39,15 @@ public sealed class Offer
 
     public DateTimeOffset CreatedAt { get; private set; }
 
+    /// <summary>Сумма всех платежей по графику, ₽. Считается из суммы, ставки и срока предложения так же, как в договоре.</summary>
+    public decimal TotalPayment => Totals.TotalPayment;
+
+    /// <summary>Переплата за весь срок, ₽. Считается так же, как в договоре.</summary>
+    public decimal TotalInterest => Totals.TotalInterest;
+
     public bool IsPending => Response == OfferResponse.Pending;
+
+    private LoanTotals Totals => LoanMath.Totals(Amount, InterestRate, TermMonths);
 
     public bool IsExpired(DateTimeOffset now) => IsPending && now >= ExpiresAt;
 

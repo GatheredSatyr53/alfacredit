@@ -23,6 +23,32 @@ public sealed class OfferTests
     }
 
     [Fact]
+    public void Offer_carries_total_payment_and_overpayment_for_its_own_terms()
+    {
+        var application = ApprovedApplication();
+        var offer = application.CurrentOffer.ShouldNotBeNull();
+
+        offer.TotalPayment.ShouldBe(LoanMath.Totals(1_000_000, 19.5m, 12).TotalPayment);
+        offer.TotalInterest.ShouldBe(LoanMath.Totals(1_000_000, 19.5m, 12).TotalInterest);
+        offer.TotalPayment.ShouldBe(offer.Amount + offer.TotalInterest);
+        offer.TotalInterest.ShouldBeInRange(100_000m, 115_000m);
+    }
+
+    [Fact]
+    public void Offer_totals_follow_the_changed_conditions_not_the_requested_ones()
+    {
+        var offer = Offer.Create(Guid.NewGuid(), Guid.NewGuid(), 1_500_000, 12, 19.5m, 138_593.06m, TestData.Now, TimeSpan.FromDays(7));
+
+        offer.TotalPayment.ShouldBe(1_663_116.74m);
+        offer.TotalInterest.ShouldBe(163_116.74m);
+
+        var reduced = Offer.Create(Guid.NewGuid(), Guid.NewGuid(), 2_400_000, 24, 22.5m, 125_100.96m, TestData.Now, TimeSpan.FromDays(7));
+
+        reduced.TotalPayment.ShouldBe(3_002_423.02m);
+        reduced.TotalInterest.ShouldBe(602_423.02m);
+    }
+
+    [Fact]
     public void Declining_offer_closes_application()
     {
         var application = ApprovedApplication();

@@ -681,6 +681,7 @@ Preview не вызывает сервис скоринга и не меняет
 | Скоринг | без изменений | |
 | API (версия 2) | `POST /api/financing/preview`: новые поля `calculationDate`, `notCompared[]`, `options[].suggestedAmount`, `unsuitable[].suggestedAmount`; `affordability.level` получил `InsufficientData`, `monthlyProfit`, `debtLoad`, `profitBasis` стали nullable; коды `auto_decision_possible`, `checks_automatic`, `affordability_unknown`, `limit_product`; код `credit_history_consent` удалён; овердрафт и кредитная линия вне `options` | фронт ещё не подключён, формат заявок не менялся |
 | Календарь | «сегодня» по Москве в preview, при создании заявки и в возрасте бизнеса | без миграции: хранимые даты не меняются |
+| API | `offer` в `GET /api/applications/{id}` и ответах `offer/accept`, `offer/decline`: новые поля `totalPayment`, `totalInterest` (фактические условия для карточки решения до принятия; preview их не заменяет) | только добавление, без миграции: считаются из суммы, ставки и срока предложения |
 
 ### Конфигурация
 
@@ -743,7 +744,9 @@ export interface FinancingPreview {
 }
 ```
 
-В `Application` и `ApplicationSummary` добавляется `needByDate: string | null`. Остальные типы не меняются.
+В `Application` и `ApplicationSummary` добавляется `needByDate: string | null`. В `Offer` добавляются `totalPayment: number`
+и `totalInterest: number` — сумма всех платежей и переплата по фактическим условиям предложения; карточка решения до принятия
+берёт итоги отсюда, а не из `cost` preview. Остальные типы не меняются.
 
 ## Передача на интеграцию
 
@@ -754,7 +757,7 @@ export interface FinancingPreview {
 | Проверки | юнит-тесты `tests/AlfaCredit.UnitTests/Financing/` (контрольные числа этого документа, подбор срока, пороги нагрузки, «недостаточно данных», меньшая сумма, ориентиры дат, сортировка, права, валидация даты, московское «сегодня» и граница суток) и `CreditApplicationTests` (окно `needByDate`, граница суток, хранение даты без сдвига); интеграционные `FinancingEndpointsTests` (preview → `applyWith` → заявка с датой, старый формат без даты, продукт с лимитом через каталог, меньшая сумма, 400/401/403, подбор без срока, «вариантов нет»); CI запускает оба набора на PostgreSQL в контейнере, локально они же идут на отдельной базе через `ALFACREDIT_TEST_POSTGRES` |
 | Локальный стенд | миграция применена к базе с существующими заявками (старые строки получили `NULL`), preview по всем пяти демо-клиентам, заявка из `applyWith`, два перезапуска API: `needByDate` и статус сохраняются, путь обработка → решение → предложение → договор → подписание → выдача пройден на заявке с датой; существующие сценарии завершения, параллельных действий и демо-менеджера прогнаны повторно |
 | Конфигурация | новая секция `FinancingPreview` в `appsettings.json` (таблица выше); значения по умолчанию, в `docker-compose.yml` и `.env` ничего менять не нужно; запрос к сервису скоринга и его контракт не изменились |
-| Фронтенд | `src/types/api.ts`: типы из раздела выше, `needByDate` в `CreateApplicationRequest`, `Application`, `ApplicationSummary`; `httpCreditApi.ts`: метод `previewFinancing(body)` → `POST /api/financing/preview` |
+| Фронтенд | `src/types/api.ts`: типы из раздела выше, `needByDate` в `CreateApplicationRequest`, `Application`, `ApplicationSummary`, `totalPayment` и `totalInterest` в `Offer`; `httpCreditApi.ts`: метод `previewFinancing(body)` → `POST /api/financing/preview` |
 | ML | правила `rules-0.3` согласованы (раздел «Согласовано с ML»); изменение порогов нагрузки = новая версия правил в scoring и параметры `FinancingPreview__*` здесь |
 
 ## Изменения версии 2
