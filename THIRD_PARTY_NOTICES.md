@@ -6,7 +6,7 @@
 
 ## Собственные компоненты команды
 
-Backend: [GatheredSatyr53/probiinik](https://github.com/GatheredSatyr53/probiinik). Frontend: [exsyyy/alfacredit-frontend](https://github.com/exsyyy/alfacredit-frontend). ML: [uandrosova07-arch/scoring](https://github.com/uandrosova07-arch/scoring). Версии frontend и ML, используемые полным демо, закреплены в `scripts/start-demo.ps1`. Собственный код команды и её модель не приписываются лицензиям сторонних библиотек.
+Backend: [GatheredSatyr53/probiinik](https://github.com/GatheredSatyr53/probiinik). Frontend: [exsyyy/alfacredit-frontend](https://github.com/exsyyy/dimadimalohloh). ML: [uandrosova07-arch/scoring](https://github.com/uandrosova07-arch/scoring). Версии frontend и ML, используемые полным демо, закреплены в `scripts/start-demo.ps1`. Собственный код команды и её модель не приписываются лицензиям сторонних библиотек.
 
 ## Backend: NuGet-библиотеки и инструменты
 

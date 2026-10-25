@@ -17,7 +17,7 @@ if (-not $PrepareOnly) {
 }
 
 $components = @(
-    @{ Name = 'frontend'; Url = 'https://github.com/exsyyy/alfacredit-frontend.git'; Commit = '986fc3cf2b755c7e0abb976454cb9d187c2566be' },
+    @{ Name = 'frontend'; Url = 'https://github.com/exsyyy/dimadimalohloh.git'; Commit = '2515f131fe5fba2b20caa76d9026c807dce6d8e4' },
     @{ Name = 'scoring'; Url = 'https://github.com/uandrosova07-arch/scoring.git'; Commit = 'edc7f014cb746d12b9beff495616d9c5c7ac1703' }
 )
 New-Item -ItemType Directory -Force -Path $demoRoot | Out-Null

@@ -76,7 +76,7 @@ services:
       context: ./.demo/frontend
       args:
         VITE_API_BASE_URL: http://localhost:${DEMO_API_PORT:-18080}
-    image: alfacredit-demo-frontend:986fc3c
+    image: alfacredit-demo-frontend:2515f13
     depends_on:
       api:
         condition: service_healthy
