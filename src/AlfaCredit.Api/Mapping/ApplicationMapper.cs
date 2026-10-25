@@ -28,13 +28,13 @@ public static class ApplicationMapper
         application.CreatedAt,
         application.UpdatedAt,
         application.AvailableActions(actor.ActorType),
-        application.LatestDecision?.ToDto(),
+        application.LatestDecision?.ToDto(actor),
         application.CurrentOffer?.ToDto(application.Product.Type),
         application.CurrentContract?.ToSummaryDto(now),
         application.CurrentDisbursement?.ToDto(),
         actor.IsBankEmployee ? application.LatestScoring?.ToDto() : null,
         actor.IsBankEmployee ? application.Checks.Select(ToDto).ToArray() : null,
-        application.History.Select(ToDto).ToArray());
+        application.History.Select(entry => ToDto(entry, actor)).ToArray());
 
     public static ApplicationSummaryDto ToSummaryDto(this CreditApplication application) => new(
         application.Id,
@@ -50,7 +50,7 @@ public static class ApplicationMapper
         application.CreatedAt,
         application.UpdatedAt);
 
-    public static DecisionDto ToDto(this Decision decision) => new(
+    public static DecisionDto ToDto(this Decision decision, Actor actor) => new(
         decision.Type,
         decision.IsFinal,
         decision.DecidedBy,
@@ -60,8 +60,11 @@ public static class ApplicationMapper
         decision.ApprovedTermMonths,
         decision.InterestRate,
         decision.MonthlyPayment,
-        decision.Conditions,
-        decision.Reasons.Select(r => new DecisionReasonDto(r.Code, r.Title, r.ClientExplanation)).ToArray(),
+        ClientDecisionText.ForActor(decision.Conditions, actor),
+        decision.Reasons.Select(r => new DecisionReasonDto(
+            r.Code,
+            !actor.IsBankEmployee && r.Code == "risk_grade" ? "Результат оценки" : ClientDecisionText.ForActor(r.Title, actor),
+            ClientDecisionText.ForActor(r.ClientExplanation, actor))).ToArray(),
         decision.DecidedAt);
 
     public static OfferDto ToDto(this Offer offer, ProductType productType)
@@ -103,12 +106,12 @@ public static class ApplicationMapper
         check.CheckedAt,
         check.Error);
 
-    private static ApplicationHistoryEntryDto ToDto(ApplicationStatusHistory entry) => new(
+    private static ApplicationHistoryEntryDto ToDto(ApplicationStatusHistory entry, Actor actor) => new(
         entry.FromStatus,
         entry.ToStatus,
         ApplicationStatusCatalog.Get(entry.ToStatus).Title,
         entry.ActorType,
         entry.ActorUserId,
-        entry.Comment,
+        ClientDecisionText.ForActor(entry.Comment, actor),
         entry.OccurredAt);
 }

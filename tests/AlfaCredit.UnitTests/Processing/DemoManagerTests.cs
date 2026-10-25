@@ -52,6 +52,7 @@ public sealed class DemoManagerTests
         decision.Reasons.Select(r => r.Code).ShouldContain(DemoManagerPolicy.SimulatedReasonCode);
         decision.Reasons.Select(r => r.Code).ShouldContain(DemoManagerPolicy.ApprovedReasonCode);
         decision.Conditions!.ShouldContain("ставка 21 %");
+        decision.Conditions!.ShouldNotContain("грейд");
         application.CurrentOffer.ShouldNotBeNull().Amount.ShouldBe(8_000_000);
         application.AvailableActions(ActorType.Client).ShouldBe(["acceptOffer", "declineOffer"], ignoreOrder: true);
         application.History[^1].Comment!.ShouldContain("Смоделированный ответ менеджера (демо-режим)");
@@ -61,6 +62,7 @@ public sealed class DemoManagerTests
         _jobs.Items.ShouldAllBe(j => j.Status == ProcessingJobStatus.Done);
         _feed.Items.Where(f => f.UserId == _clientId).Select(f => f.Type).ShouldContain(FeedItemType.OfferReady);
         _feed.Items.Where(f => f.UserId == _clientId && f.Type == FeedItemType.OfferReady).ShouldHaveSingleItem().Body.ShouldContain("смоделирован");
+        _feed.Items.Where(f => f.UserId == _clientId).ShouldAllBe(f => !f.Body.Contains("грейд", StringComparison.OrdinalIgnoreCase));
         _notifier.Notifications.Select(n => n.Status).ShouldContain(ApplicationStatus.ApprovedWithConditions);
 
         // Клиент продолжает оформление как после обычного одобрения

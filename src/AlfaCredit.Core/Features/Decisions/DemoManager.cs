@@ -82,7 +82,7 @@ public static class DemoManagerPolicy
 
         if (rate > product.BaseRate)
         {
-            conditions.Add($"ставка {rate:0.##} % годовых с учётом надбавки за риск (грейд {grade})");
+            conditions.Add($"ставка {rate:0.##} % годовых с учётом оценки риска");
         }
 
         if (scoring is null || grade == RiskGrade.D)
