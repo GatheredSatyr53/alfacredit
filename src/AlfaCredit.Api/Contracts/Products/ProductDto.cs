@@ -15,6 +15,7 @@ namespace AlfaCredit.Api.Contracts.Products;
 /// <param name="AllowedPurposes">Допустимые цели финансирования.</param>
 /// <param name="MinBusinessAgeMonths">Минимальный возраст бизнеса, мес.</param>
 /// <param name="RequiresCollateral">Требуется ли залог.</param>
+/// <param name="PreliminaryPayment">Предварительный ежемесячный платёж для amount и termMonths из запроса; null, если они не переданы.</param>
 public sealed record ProductDto(
     string Code,
     string Name,
@@ -27,7 +28,8 @@ public sealed record ProductDto(
     decimal BaseRate,
     IReadOnlyList<LoanPurposeDto> AllowedPurposes,
     int MinBusinessAgeMonths,
-    bool RequiresCollateral);
+    bool RequiresCollateral,
+    PreliminaryPaymentDto? PreliminaryPayment);
 
 /// <summary>Цель финансирования: код для API и название для интерфейса.</summary>
 public sealed record LoanPurposeDto(LoanPurpose Code, string Title);

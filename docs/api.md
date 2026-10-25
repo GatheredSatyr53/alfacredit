@@ -82,16 +82,82 @@
       { "code": "Other", "title": "Другая цель" }
     ],
     "minBusinessAgeMonths": 12,
-    "requiresCollateral": false
+    "requiresCollateral": false,
+    "preliminaryPayment": null
   }
 ]
 ```
 
 Продукты seed: `working-capital`, `express`, `overdraft`, `credit-line`, `investment`.
 
+#### Предварительный ежемесячный платёж
+
+С параметрами `amount` и `termMonths` (вместе, иначе `400`) к каждому продукту добавляется `preliminaryPayment`:
+платёж, сумма всех платежей и переплата по базовой ставке продукта для введённых суммы и срока. Считается на сервере
+тем же аннуитетным графиком, что `cost` в предварительном подборе и `offer` в заявке. Это ориентир до проверки заявки:
+фактическую ставку банк назначает в предложении после оценки риска. Без параметров `preliminaryPayment` = `null`.
+
+```
+GET /api/products?amount=1500000&termMonths=12
+GET /api/products/express?amount=1500000&termMonths=12
+```
+
+```json
+{
+  "code": "express", "name": "Экспресс-кредит", "baseRate": 23, "...": "...",
+  "preliminaryPayment": {
+    "amount": 1500000, "termMonths": 12, "interestRate": 23,
+    "available": true,
+    "monthlyPayment": 141114.48, "totalPayment": 1693373.8, "totalInterest": 193373.8,
+    "notes": [
+      { "code": "preliminary", "text": "Предварительный расчёт по базовой ставке 23 % годовых: 141 114 ₽ в месяц, переплата 193 374 ₽ за 12 месяцев. Итоговая ставка зависит от оценки риска: платёж в предложении банка может отличаться." }
+    ]
+  }
+}
+```
+
+Когда расчёт недоступен, `available` = `false`, числа `null`, причины в `notes` с теми же кодами, что в подборе:
+
+```json
+{
+  "code": "overdraft", "...": "...",
+  "preliminaryPayment": {
+    "amount": 1500000, "termMonths": 12, "interestRate": 21,
+    "available": false, "monthlyPayment": null, "totalPayment": null, "totalInterest": null,
+    "notes": [ { "code": "limit_product", "text": "«Овердрафт»: проценты начисляются только за дни использования лимита, ежемесячный платёж заранее не определён." } ]
+  }
+}
+```
+
+| Код в `notes` | Когда |
+|---|---|
+| `preliminary` | расчёт выполнен; текст — оговорка для карточки |
+| `limit_product` | овердрафт и кредитная линия: платёж по аннуитетной модели не считается |
+| `amount_below_min`, `amount_above_max` | сумма вне диапазона продукта, в тексте граница |
+| `term_out_of_range` | срок вне диапазона продукта, в тексте границы |
+
+Ошибки `400` (`errors.amount`, `errors.termMonths`): сумма не положительная или больше 1 000 000 000 ₽, срок не от 1
+до 120 месяцев, передан только один из двух параметров.
+
+Тип для фронтенда (`src/types/api.ts`):
+
+```ts
+export interface PreliminaryPayment {
+  amount: number
+  termMonths: number
+  interestRate: number
+  available: boolean
+  monthlyPayment: number | null
+  totalPayment: number | null
+  totalInterest: number | null
+  notes: Array<{ code: string; text: string }>
+}
+// в Product: preliminaryPayment: PreliminaryPayment | null
+```
+
 ### GET /api/products/{code}
 
-Один продукт, код в любом регистре. 404 для неизвестного кода.
+Один продукт, код в любом регистре. 404 для неизвестного кода. Параметры `amount` и `termMonths` те же, что у списка.
 
 ## Компании
 

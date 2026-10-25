@@ -1223,6 +1223,35 @@
           "Products"
         ],
         "summary": "Список активных кредитных продуктов.",
+        "description": "С параметрами amount и termMonths в каждом продукте заполняется preliminaryPayment: платёж, сумма всех платежей\nи переплата по базовой ставке для срочных кредитов; для овердрафта и кредитной линии расчёт недоступен,\nдля суммы или срока вне диапазона продукта возвращаются причины. Без параметров preliminaryPayment = null.",
+        "parameters": [
+          {
+            "name": "amount",
+            "in": "query",
+            "description": "Сумма кредита в рублях.",
+            "schema": {
+              "maximum": 1000000000,
+              "minimum": 1,
+              "type": "number",
+              "format": "double",
+              "example": 1500000
+            },
+            "example": 1500000
+          },
+          {
+            "name": "termMonths",
+            "in": "query",
+            "description": "Срок в месяцах.",
+            "schema": {
+              "maximum": 120,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "example": 12
+            },
+            "example": 12
+          }
+        ],
         "responses": {
           "200": {
             "description": "Продукты в порядке отображения на витрине.",
@@ -1233,6 +1262,16 @@
                   "items": {
                     "$ref": "#/components/schemas/ProductDto"
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Сумма или срок вне допустимых значений, или передан только один из параметров.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
                 }
               }
             }
@@ -1255,15 +1294,51 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "amount",
+            "in": "query",
+            "description": "Сумма кредита в рублях.",
+            "schema": {
+              "maximum": 1000000000,
+              "minimum": 1,
+              "type": "number",
+              "format": "double",
+              "example": 1500000
+            },
+            "example": 1500000
+          },
+          {
+            "name": "termMonths",
+            "in": "query",
+            "description": "Срок в месяцах.",
+            "schema": {
+              "maximum": 120,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "example": 12
+            },
+            "example": 12
           }
         ],
         "responses": {
           "200": {
-            "description": "Продукт найден.",
+            "description": "Продукт найден; с параметрами amount и termMonths заполнен preliminaryPayment.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProductDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Сумма или срок вне допустимых значений, или передан только один из параметров.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
                 }
               }
             }
@@ -2857,6 +2932,57 @@
         "additionalProperties": false,
         "description": "Стоимость при базовой ставке продукта и при верхней границе ставки автоматического одобрения (+3 п.п.)."
       },
+      "PreliminaryPaymentDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Сумма, для которой сделан расчёт, ₽.",
+            "format": "double"
+          },
+          "termMonths": {
+            "type": "integer",
+            "description": "Срок, для которого сделан расчёт, мес.",
+            "format": "int32"
+          },
+          "interestRate": {
+            "type": "number",
+            "description": "Базовая годовая ставка продукта, %.",
+            "format": "double"
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Платёж посчитан: продукт срочный, сумма и срок в его диапазоне. Иначе числа null, причины в notes."
+          },
+          "monthlyPayment": {
+            "type": "number",
+            "description": "Аннуитетный ежемесячный платёж, ₽.",
+            "format": "double",
+            "nullable": true
+          },
+          "totalPayment": {
+            "type": "number",
+            "description": "Сумма всех платежей по графику, ₽.",
+            "format": "double",
+            "nullable": true
+          },
+          "totalInterest": {
+            "type": "number",
+            "description": "Переплата за весь срок, ₽.",
+            "format": "double",
+            "nullable": true
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreviewNoteDto"
+            },
+            "description": "Оговорка к расчёту (код preliminary) или причины, по которым он недоступен: limit_product, amount_below_min, amount_above_max, term_out_of_range."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Предварительный ежемесячный платёж по продукту для суммы и срока из запроса. Считается по базовой ставке продукта\nдо проверки заявки; фактические условия банк назначает в предложении после оценки риска."
+      },
       "PreviewCompanyDto": {
         "type": "object",
         "properties": {
@@ -3015,6 +3141,9 @@
           "requiresCollateral": {
             "type": "boolean",
             "description": "Требуется ли залог."
+          },
+          "preliminaryPayment": {
+            "$ref": "#/components/schemas/PreliminaryPaymentDto"
           }
         },
         "additionalProperties": false,
@@ -3388,7 +3517,7 @@
     },
     {
       "name": "Products",
-      "description": "Каталог кредитных продуктов. Доступен без входа, чтобы показывать витрину до регистрации."
+      "description": "Каталог кредитных продуктов. Доступен без входа, чтобы показывать витрину до регистрации.\nС параметрами amount и termMonths к каждому продукту добавляется предварительный ежемесячный платёж по базовой ставке."
     }
   ]
 }

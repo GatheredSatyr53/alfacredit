@@ -134,6 +134,35 @@
             "header": [],
             "url": "{{baseUrl}}/api/products/working-capital"
           }
+        },
+        {
+          "name": "Preliminary payment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/express?amount=1500000&termMonths=12",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "express"
+              ],
+              "query": [
+                {
+                  "key": "amount",
+                  "value": "1500000"
+                },
+                {
+                  "key": "termMonths",
+                  "value": "12"
+                }
+              ]
+            },
+            "description": "Предварительный ежемесячный платёж по базовой ставке для суммы и срока; те же параметры принимает GET /api/products."
+          }
         }
       ]
     },
