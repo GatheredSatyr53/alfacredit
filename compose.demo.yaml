@@ -19,7 +19,7 @@ services:
   scoring:
     build:
       context: ./.demo/scoring
-    image: alfacredit-demo-scoring:7a293a3
+    image: alfacredit-demo-scoring:edc7f01
     environment:
       SCORING_MODEL: logreg-synthetic-0.1
     ports:

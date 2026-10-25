@@ -8,7 +8,7 @@
 .\scripts\start-demo.ps1
 ```
 
-Скрипт закрепляет frontend на `986fc3cf2b755c7e0abb976454cb9d187c2566be`, ML на `7a293a39e54a38846326ea8cea57eaa27919e326`; backend собирается из текущего checkout. Устанавливать языковые среды на хост не нужно. Ветки и незакоммиченные файлы backend скрипт не меняет. Если `.demo/frontend` или `.demo/scoring` содержат изменения, подготовка остановится и попросит их сохранить.
+Скрипт закрепляет frontend на `986fc3cf2b755c7e0abb976454cb9d187c2566be`, ML на `edc7f014cb746d12b9beff495616d9c5c7ac1703`; backend собирается из текущего checkout. Устанавливать языковые среды на хост не нужно. Ветки и незакоммиченные файлы backend скрипт не меняет. Если `.demo/frontend` или `.demo/scoring` содержат изменения, подготовка остановится и попросит их сохранить.
 
 Если политика PowerShell запрещает выполнение скрипта, выполни Git-команды вручную из следующего раздела. Системную политику менять не требуется.
 
@@ -20,7 +20,7 @@
 git clone https://github.com/exsyyy/alfacredit-frontend.git .demo/frontend
 git -C .demo/frontend checkout --detach 986fc3cf2b755c7e0abb976454cb9d187c2566be
 git clone https://github.com/uandrosova07-arch/scoring.git .demo/scoring
-git -C .demo/scoring checkout --detach 7a293a39e54a38846326ea8cea57eaa27919e326
+git -C .demo/scoring checkout --detach edc7f014cb746d12b9beff495616d9c5c7ac1703
 docker compose -f compose.demo.yaml up -d --build --wait --wait-timeout 300
 ```
 

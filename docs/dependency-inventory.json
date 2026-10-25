@@ -1,0 +1,1510 @@
+{
+  "preparedDate": "2026-10-26",
+  "nuget": [
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Design",
+      "version": "10.0.13",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Serilog.AspNetCore",
+      "version": "10.0.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Swashbuckle.AspNetCore",
+      "version": "10.3.1",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Humanizer.Core",
+      "version": "2.14.1",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Bcl.Cryptography",
+      "version": "10.0.2",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Build.Framework",
+      "version": "18.0.2",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.Analyzers",
+      "version": "3.11.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.Common",
+      "version": "5.0.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp",
+      "version": "5.0.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp.Workspaces",
+      "version": "5.0.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.Workspaces.Common",
+      "version": "5.0.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.Workspaces.MSBuild",
+      "version": "5.0.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Abstractions",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Analyzers",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Relational",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.ApiDescription.Server",
+      "version": "10.0.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyModel",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.IdentityModel.Abstractions",
+      "version": "8.19.2",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.IdentityModel.JsonWebTokens",
+      "version": "8.19.2",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.IdentityModel.Logging",
+      "version": "8.19.2",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.IdentityModel.Protocols",
+      "version": "8.19.2",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.IdentityModel.Protocols.OpenIdConnect",
+      "version": "8.19.2",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.IdentityModel.Tokens",
+      "version": "8.19.2",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.OpenApi",
+      "version": "2.7.5",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.VisualStudio.SolutionPersistence",
+      "version": "1.0.52",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "Mono.TextTemplating",
+      "version": "3.0.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "Newtonsoft.Json",
+      "version": "13.0.4",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "Npgsql",
+      "version": "10.0.3",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Serilog",
+      "version": "4.3.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Serilog.Extensions.Hosting",
+      "version": "10.0.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Serilog.Extensions.Logging",
+      "version": "10.0.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Serilog.Formatting.Compact",
+      "version": "3.0.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Serilog.Settings.Configuration",
+      "version": "10.0.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Serilog.Sinks.Console",
+      "version": "6.1.1",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Serilog.Sinks.Debug",
+      "version": "3.0.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Serilog.Sinks.File",
+      "version": "7.0.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Swashbuckle.AspNetCore.Swagger",
+      "version": "10.3.1",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Swashbuckle.AspNetCore.SwaggerGen",
+      "version": "10.3.1",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Swashbuckle.AspNetCore.SwaggerUI",
+      "version": "10.3.1",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "System.CodeDom",
+      "version": "6.0.0",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "System.Composition",
+      "version": "9.0.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "System.Composition.AttributedModel",
+      "version": "9.0.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "System.Composition.Convention",
+      "version": "9.0.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "System.Composition.Hosting",
+      "version": "9.0.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "System.Composition.Runtime",
+      "version": "9.0.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "System.Composition.TypedParts",
+      "version": "9.0.0",
+      "sourceLock": "src/AlfaCredit.Api/packages.lock.json"
+    },
+    {
+      "name": "System.IdentityModel.Tokens.Jwt",
+      "version": "8.19.2",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Npgsql.EntityFrameworkCore.PostgreSQL",
+      "version": "10.0.3",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Abstractions",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Options",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.Abstractions",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Primitives",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.Abstractions",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.Binder",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Abstractions",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Http",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Identity.Core",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ConfigurationExtensions",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Options.DataAnnotations",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.AspNetCore.Cryptography.Internal",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.AspNetCore.Cryptography.KeyDerivation",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Relational",
+      "version": "10.0.4",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Abstractions",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Memory",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Diagnostics",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Diagnostics.Abstractions",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.FileProviders.Abstractions",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Logging",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "coverlet.collector",
+      "version": "6.0.4",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Testing",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.NET.Test.Sdk",
+      "version": "17.14.1",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Shouldly",
+      "version": "4.3.0",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Testcontainers.PostgreSql",
+      "version": "4.16.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "xunit",
+      "version": "2.9.3",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "xunit.runner.visualstudio",
+      "version": "3.1.4",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "BouncyCastle.Cryptography",
+      "version": "2.7.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "DiffEngine",
+      "version": "11.3.0",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Docker.DotNet.Enhanced",
+      "version": "4.3.3",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Docker.DotNet.Enhanced.Handler.Abstractions",
+      "version": "4.3.3",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Docker.DotNet.Enhanced.LegacyHttp",
+      "version": "4.3.3",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Docker.DotNet.Enhanced.NativeHttp",
+      "version": "4.3.3",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Docker.DotNet.Enhanced.NPipe",
+      "version": "4.3.3",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Docker.DotNet.Enhanced.Unix",
+      "version": "4.3.3",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Docker.DotNet.Enhanced.X509",
+      "version": "4.3.3",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "EmptyFiles",
+      "version": "4.4.0",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.CodeCoverage",
+      "version": "17.14.1",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.CommandLine",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.EnvironmentVariables",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.FileExtensions",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.Json",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.UserSecrets",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Diagnostics.HealthChecks",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.FileProviders.Physical",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.FileSystemGlobbing",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Configuration",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Console",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Debug",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.EventLog",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.EventSource",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.TestPlatform.ObjectModel",
+      "version": "17.14.1",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Microsoft.TestPlatform.TestHost",
+      "version": "17.14.1",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Newtonsoft.Json",
+      "version": "13.0.3",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "SharpZipLib",
+      "version": "1.4.2",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "SSH.NET",
+      "version": "2026.0.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "System.Diagnostics.EventLog",
+      "version": "10.0.13",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "System.Management",
+      "version": "6.0.1",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "Testcontainers",
+      "version": "4.16.0",
+      "sourceLock": "tests/AlfaCredit.IntegrationTests/packages.lock.json"
+    },
+    {
+      "name": "xunit.abstractions",
+      "version": "2.0.3",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "xunit.analyzers",
+      "version": "1.18.0",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "xunit.assert",
+      "version": "2.9.3",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "xunit.core",
+      "version": "2.9.3",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "xunit.extensibility.core",
+      "version": "2.9.3",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    },
+    {
+      "name": "xunit.extensibility.execution",
+      "version": "2.9.3",
+      "sourceLock": "tests/AlfaCredit.UnitTests/packages.lock.json"
+    }
+  ],
+  "npm": [
+    {
+      "path": "node_modules/@adobe/css-tools",
+      "version": "4.5.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@asamuzakjp/css-color",
+      "version": "5.1.11",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@asamuzakjp/dom-selector",
+      "version": "7.1.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@asamuzakjp/generational-cache",
+      "version": "1.0.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@asamuzakjp/nwsapi",
+      "version": "2.3.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@babel/code-frame",
+      "version": "7.29.7",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@babel/helper-validator-identifier",
+      "version": "7.29.7",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@babel/runtime",
+      "version": "7.29.10",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@bramus/specificity",
+      "version": "2.4.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@csstools/color-helpers",
+      "version": "6.1.2",
+      "license": "MIT-0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@csstools/css-calc",
+      "version": "3.4.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@csstools/css-color-parser",
+      "version": "4.2.6",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@csstools/css-parser-algorithms",
+      "version": "4.0.2",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@csstools/css-syntax-patches-for-csstree",
+      "version": "1.1.15",
+      "license": "MIT-0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@csstools/css-tokenizer",
+      "version": "4.0.2",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@exodus/bytes",
+      "version": "1.16.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@jridgewell/resolve-uri",
+      "version": "3.1.2",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@jridgewell/sourcemap-codec",
+      "version": "1.6.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@jridgewell/trace-mapping",
+      "version": "0.3.31",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@oxc-project/types",
+      "version": "0.150.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-android-arm-eabi",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-android-arm64",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-darwin-arm64",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-darwin-x64",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-freebsd-x64",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-arm-gnueabihf",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-arm64-gnu",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-arm64-musl",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-ppc64-gnu",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-s390x-gnu",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-x64-gnu",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-linux-x64-musl",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-openharmony-arm64",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-win32-arm64-msvc",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/binding-win32-x64-msvc",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@rolldown/pluginutils",
+      "version": "1.0.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@testing-library/dom",
+      "version": "10.4.2",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@testing-library/jest-dom",
+      "version": "7.0.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@testing-library/jest-dom/node_modules/dom-accessibility-api",
+      "version": "0.6.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@testing-library/react",
+      "version": "16.3.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@types/aria-query",
+      "version": "5.0.4",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@types/chai",
+      "version": "5.2.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@types/deep-eql",
+      "version": "4.0.2",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@types/estree",
+      "version": "1.0.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@types/node",
+      "version": "24.13.5",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@types/react",
+      "version": "19.3.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@types/react-dom",
+      "version": "19.3.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@vitejs/plugin-react",
+      "version": "6.1.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@vitest/mocker",
+      "version": "5.0.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@vitest/mocker/node_modules/magic-string",
+      "version": "1.4.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/@vitest/spy",
+      "version": "5.0.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/ansi-regex",
+      "version": "5.0.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/ansi-styles",
+      "version": "5.2.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/aria-query",
+      "version": "5.3.0",
+      "license": "Apache-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/assertion-error",
+      "version": "2.0.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/bidi-js",
+      "version": "1.1.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/chai",
+      "version": "6.3.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/cookie",
+      "version": "1.1.1",
+      "license": "MIT",
+      "dev": false
+    },
+    {
+      "path": "node_modules/css-tree",
+      "version": "3.2.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/css.escape",
+      "version": "1.5.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/csstype",
+      "version": "3.2.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/data-urls",
+      "version": "7.0.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/decimal.js",
+      "version": "10.6.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/dequal",
+      "version": "2.0.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/detect-libc",
+      "version": "2.1.2",
+      "license": "Apache-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/dom-accessibility-api",
+      "version": "0.5.16",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/entities",
+      "version": "8.1.0",
+      "license": "BSD-2-Clause",
+      "dev": true
+    },
+    {
+      "path": "node_modules/es-module-lexer",
+      "version": "2.3.2",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/estree-walker",
+      "version": "3.0.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/expect-type",
+      "version": "1.4.0",
+      "license": "Apache-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/fdir",
+      "version": "6.5.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/fsevents",
+      "version": "2.3.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/html-encoding-sniffer",
+      "version": "6.0.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/indent-string",
+      "version": "4.0.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/is-potential-custom-element-name",
+      "version": "1.0.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/js-tokens",
+      "version": "4.0.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/jsdom",
+      "version": "29.1.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/jsdom/node_modules/lru-cache",
+      "version": "11.5.3",
+      "license": "BlueOak-1.0.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lightningcss",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lightningcss-android-arm64",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lightningcss-darwin-arm64",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lightningcss-darwin-x64",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lightningcss-freebsd-x64",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lightningcss-linux-arm-gnueabihf",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lightningcss-linux-arm64-gnu",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lightningcss-linux-arm64-musl",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lightningcss-linux-x64-gnu",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lightningcss-linux-x64-musl",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lightningcss-win32-arm64-msvc",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lightningcss-win32-x64-msvc",
+      "version": "1.33.0",
+      "license": "MPL-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/lz-string",
+      "version": "1.5.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/mdn-data",
+      "version": "2.27.1",
+      "license": "CC0-1.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/min-indent",
+      "version": "1.0.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/nanoid",
+      "version": "3.3.19",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/obug",
+      "version": "2.2.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/parse5",
+      "version": "8.0.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/picocolors",
+      "version": "1.1.1",
+      "license": "ISC",
+      "dev": true
+    },
+    {
+      "path": "node_modules/picomatch",
+      "version": "4.0.7",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/postcss",
+      "version": "8.5.28",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/pretty-format",
+      "version": "27.5.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/punycode",
+      "version": "2.3.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/react",
+      "version": "19.3.0",
+      "license": "MIT",
+      "dev": false
+    },
+    {
+      "path": "node_modules/react-dom",
+      "version": "19.3.0",
+      "license": "MIT",
+      "dev": false
+    },
+    {
+      "path": "node_modules/react-is",
+      "version": "17.0.2",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/react-router",
+      "version": "7.18.4",
+      "license": "MIT",
+      "dev": false
+    },
+    {
+      "path": "node_modules/react-router-dom",
+      "version": "7.18.4",
+      "license": "MIT",
+      "dev": false
+    },
+    {
+      "path": "node_modules/redent",
+      "version": "3.0.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/require-from-string",
+      "version": "2.0.2",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/rolldown",
+      "version": "1.2.9",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/saxes",
+      "version": "6.0.0",
+      "license": "ISC",
+      "dev": true
+    },
+    {
+      "path": "node_modules/scheduler",
+      "version": "0.28.0",
+      "license": "MIT",
+      "dev": false
+    },
+    {
+      "path": "node_modules/set-cookie-parser",
+      "version": "2.7.2",
+      "license": "MIT",
+      "dev": false
+    },
+    {
+      "path": "node_modules/source-map-js",
+      "version": "1.2.2",
+      "license": "BSD-3-Clause",
+      "dev": true
+    },
+    {
+      "path": "node_modules/std-env",
+      "version": "4.3.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/strip-indent",
+      "version": "3.0.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/symbol-tree",
+      "version": "3.2.4",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/tinybench",
+      "version": "6.2.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/tinyexec",
+      "version": "1.3.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/tinyglobby",
+      "version": "0.2.17",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/tldts",
+      "version": "7.4.18",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/tldts-core",
+      "version": "7.4.18",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/tough-cookie",
+      "version": "6.0.2",
+      "license": "BSD-3-Clause",
+      "dev": true
+    },
+    {
+      "path": "node_modules/tr46",
+      "version": "6.0.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/typescript",
+      "version": "6.0.3",
+      "license": "Apache-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/undici",
+      "version": "7.30.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/undici-types",
+      "version": "7.18.2",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/vite",
+      "version": "8.3.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/vitest",
+      "version": "5.0.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/vitest/node_modules/magic-string",
+      "version": "1.4.3",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/w3c-xmlserializer",
+      "version": "5.0.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/webidl-conversions",
+      "version": "8.0.1",
+      "license": "BSD-2-Clause",
+      "dev": true
+    },
+    {
+      "path": "node_modules/whatwg-mimetype",
+      "version": "5.0.0",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/whatwg-url",
+      "version": "16.0.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/why-is-node-running",
+      "version": "3.2.1",
+      "license": "MIT",
+      "dev": true
+    },
+    {
+      "path": "node_modules/xml-name-validator",
+      "version": "5.0.0",
+      "license": "Apache-2.0",
+      "dev": true
+    },
+    {
+      "path": "node_modules/xmlchars",
+      "version": "2.2.0",
+      "license": "MIT",
+      "dev": true
+    }
+  ],
+  "pythonDirect": [
+    {
+      "ecosystem": "pypi",
+      "name": "pytest",
+      "version": "8.3.4",
+      "license": "MIT",
+      "classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "source": "https://pypi.org/pypi/pytest/8.3.4/json"
+    },
+    {
+      "ecosystem": "pypi",
+      "name": "httpx",
+      "version": "0.28.1",
+      "license": "BSD-3-Clause",
+      "classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "source": "https://pypi.org/pypi/httpx/0.28.1/json"
+    },
+    {
+      "ecosystem": "pypi",
+      "name": "numpy",
+      "version": "2.5.3",
+      "license": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+      "classifiers": [],
+      "source": "https://pypi.org/pypi/numpy/2.5.3/json"
+    },
+    {
+      "ecosystem": "pypi",
+      "name": "pandas",
+      "version": "3.0.5",
+      "license": "BSD-3-Clause; full license text in source metadata",
+      "classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "source": "https://pypi.org/pypi/pandas/3.0.5/json"
+    },
+    {
+      "ecosystem": "pypi",
+      "name": "scikit-learn",
+      "version": "1.9.1",
+      "license": "BSD-3-Clause",
+      "classifiers": [],
+      "source": "https://pypi.org/pypi/scikit-learn/1.9.1/json"
+    },
+    {
+      "ecosystem": "pypi",
+      "name": "fastapi",
+      "version": "0.115.6",
+      "license": null,
+      "classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "source": "https://pypi.org/pypi/fastapi/0.115.6/json"
+    },
+    {
+      "ecosystem": "pypi",
+      "name": "uvicorn",
+      "version": "0.34.0",
+      "license": "BSD-3-Clause",
+      "classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "source": "https://pypi.org/pypi/uvicorn/0.34.0/json"
+    },
+    {
+      "ecosystem": "pypi",
+      "name": "pydantic",
+      "version": "2.10.4",
+      "license": null,
+      "classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "source": "https://pypi.org/pypi/pydantic/2.10.4/json"
+    }
+  ],
+  "componentCommits": {
+    "frontend": "986fc3cf2b755c7e0abb976454cb9d187c2566be",
+    "scoring": "edc7f014cb746d12b9beff495616d9c5c7ac1703"
+  }
+}

@@ -42,7 +42,7 @@ docker compose -f compose.demo.yaml stop
 
 **Назначение репозитория:** backend — серверная часть. Его обычный `docker compose up --build` запускает API, БД и скоринг в совместимом режиме `rules-0.3`, без веб-интерфейса. Для всей программы используй команду выше; полное демо выбирает обученную модель `logreg-synthetic-0.1` и одинаковый артефакт для Python и локального резервного расчёта.
 
-[Что делает продукт и как исследование повлияло на решение](PRODUCT.md) · [Сверка с ТЗ](docs/requirements-coverage.md) · [API](docs/api.md)
+[Что делает продукт и как исследование повлияло на решение](PRODUCT.md) · [Сверка с ТЗ](docs/requirements-coverage.md) · [API](docs/api.md) · [Что отправить на приёмку](docs/submission.md) · [Проверка README компонентов](docs/readme-audit.md)
 
 ## Реализованный процесс
 
