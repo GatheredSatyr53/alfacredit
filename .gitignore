@@ -482,6 +482,7 @@ $RECYCLE.BIN/
 *.swp
 
 # Project specific
+.demo/
 .env
 .idea/
 *.swp

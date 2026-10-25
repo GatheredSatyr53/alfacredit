@@ -4,6 +4,7 @@
 **/.idea/
 **/TestResults/
 .git/
+.demo/
 .github/
 docs/
 tests/
