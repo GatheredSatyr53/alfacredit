@@ -27,6 +27,8 @@ services:
     # Registry, закреплён на коммите репозитория scoring. Те же правила встроены в API как резервная модель.
     # Сборка из локального checkout репозитория scoring: docker compose -f docker-compose.yml -f compose.scoring.yml up --build
     image: ${SCORING_IMAGE:-ghcr.io/uandrosova07-arch/scoring:4ce9e8444e24b856a404753b5218cd00fc7bea19}
+    environment:
+      SCORING_MODEL: ${SCORING_MODEL:-rules-0.3}
     ports:
       # Только для локальной отладки (curl localhost:8000/health); API ходит по внутреннему адресу http://scoring:8000
       - "127.0.0.1:${SCORING_PORT:-8000}:8000"
@@ -65,6 +67,7 @@ services:
       Processing__StageDelaySeconds: ${PROCESSING_STAGE_DELAY_SECONDS:-2}
       Simulators__FailureRate: ${SIMULATORS_FAILURE_RATE:-0}
       Scoring__Mode: ${SCORING_MODE:-External}
+      Scoring__ModelVersion: ${SCORING_MODEL:-rules-0.3}
       Scoring__BaseUrl: ${SCORING_BASE_URL:-http://scoring:8000}
       Scoring__TimeoutSeconds: ${SCORING_TIMEOUT_SECONDS:-5}
       Scoring__Retries: ${SCORING_RETRIES:-2}
