@@ -1,3 +1,5 @@
+using AlfaCredit.Api.Mapping;
+using AlfaCredit.Core.Common;
 using AlfaCredit.Core.Domain.Feed;
 
 namespace AlfaCredit.Api.Contracts.Feed;
@@ -21,8 +23,9 @@ public sealed record FeedItemDto(
     bool IsRead,
     DateTimeOffset CreatedAt)
 {
-    public static FeedItemDto From(FeedItem item) =>
-        new(item.Id, item.Type, item.Title, item.Body, item.ApplicationId, item.Link, item.IsRead, item.CreatedAt);
+    public static FeedItemDto From(FeedItem item, Actor actor) =>
+        new(item.Id, item.Type, ClientDecisionText.ForActor(item.Title, actor), ClientDecisionText.ForActor(item.Body, actor),
+            item.ApplicationId, item.Link, item.IsRead, item.CreatedAt);
 }
 
 /// <summary>Число непрочитанных событий.</summary>

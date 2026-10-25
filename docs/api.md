@@ -301,7 +301,7 @@ export interface PreliminaryPayment {
     "approvedAmount": 1500000, "approvedTermMonths": 12, "interestRate": 19.5, "monthlyPayment": 138593.06,
     "conditions": null,
     "reasons": [
-      { "code": "risk_grade", "title": "Грейд риска A, 95 баллов", "explanation": "Низкий уровень риска: финансовое положение устойчивое." },
+      { "code": "risk_grade", "title": "Результат оценки", "explanation": "Низкий уровень риска: финансовое положение устойчивое." },
       { "code": "factor_credit_history", "title": "Кредитная история", "explanation": "Просрочек по кредитам за два года нет." }
     ],
     "decidedAt": "2026-10-20T17:47:02.1+00:00"
@@ -337,9 +337,18 @@ export interface PreliminaryPayment {
 | Тип решения | Статус заявки | Что в ответе |
 |---|---|---|
 | `Approved` | Approved | `offer` на запрошенных условиях |
-| `ApprovedWithConditions` | ApprovedWithConditions | `offer` с новыми условиями, `decision.conditions` объясняет изменения, в `reasons` есть `amount_reduced` |
+| `ApprovedWithConditions` | ApprovedWithConditions | `offer` с предложенными условиями, `decision.conditions` объясняет изменения или дополнительные требования. При снижении суммы в `reasons` есть `amount_reduced`; этот код присутствует не всегда |
 | `Rejected` | Rejected | `offer` = null, `reasons` перечисляют стоп-факторы или причину по грейду |
 | `ManualReview` | ManualReview | `isFinal` = false, `recommendedType` показывает рекомендацию автоматики менеджеру. В демо-режиме через несколько секунд появляется второе решение с `decidedBy` = `Manager` и `isSimulated` = `true` (ответ менеджера смоделирован, причина `demo_manager`): одобрение с предложением или окончательный отказ, см. `decision-logic.md` |
+
+Клиентское представление не показывает буквы A–E, балл и PD: `scoring` и `checks` равны `null`,
+заголовок причины `risk_grade` — «Результат оценки», объяснение остаётся простым текстом.
+Коды причин (`risk_grade`, `grade_d`, `grade_e` и другие) сохраняются для совместимости и не предназначены для вывода в интерфейсе.
+Результат и следующие действия определяются `status`, `decision.type` и `availableActions`, а не грейдом.
+В клиентских `decision.conditions`, причинах, `history[].comment` и ленте (`GET /api/feed`, ответ отметки прочитанным)
+известные старые формулировки «Грейд риска B, 70 баллов» и «(грейд B)» преобразуются при чтении.
+Суммы, ставки, сроки, причины, требования к документам и отметка смоделированного решения сохраняются.
+Записи БД не переписываются, миграция и повторный скоринг не нужны; сотрудник банка получает исходные тексты.
 
 Сотрудник банка в том же методе дополнительно получает `scoring` и `checks` (результаты ЕГРЮЛ, ФНС, БКИ, ФССП
 с краткими выводами и флагами риска). Клиенту эти поля приходят как `null`.

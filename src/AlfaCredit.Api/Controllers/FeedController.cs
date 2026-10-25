@@ -29,7 +29,8 @@ public sealed class FeedController(FeedService feed) : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var result = await feed.ListAsync(User.GetUserId(), unreadOnly, page, pageSize, cancellationToken);
-        return PagedResponse<FeedItemDto>.From(result, FeedItemDto.From);
+        var actor = User.ToActor();
+        return PagedResponse<FeedItemDto>.From(result, item => FeedItemDto.From(item, actor));
     }
 
     /// <summary>Число непрочитанных событий для бейджа в шапке.</summary>
@@ -49,7 +50,7 @@ public sealed class FeedController(FeedService feed) : ControllerBase
     {
         var item = await feed.MarkReadAsync(id, User.GetUserId(), cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return FeedItemDto.From(item);
+        return FeedItemDto.From(item, User.ToActor());
     }
 
     /// <summary>Отметить все события прочитанными.</summary>
