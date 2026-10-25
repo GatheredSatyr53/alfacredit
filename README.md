@@ -263,3 +263,6 @@ Seed повторяем: при каждом старте добавляются
 
 Версии зафиксированы: SDK в `global.json`, пакеты в `Directory.Packages.props` и `packages.lock.json`
 (restore в CI и Docker выполняется в `--locked-mode`), образы в `Dockerfile` и `docker-compose.yml` точными тегами.
+
+
+Обученная модель, выбор версии и общий резервный расчёт: [docs/logreg-integration.md](docs/logreg-integration.md).

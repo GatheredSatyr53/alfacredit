@@ -237,7 +237,39 @@ public sealed class HttpScoringServiceTests
         handler.Calls.ShouldBe(1);
     }
 
-    private static HttpScoringService CreateService(HttpMessageHandler handler, int retries = 0, TimeSpan? timeout = null)
+    [Theory]
+    [InlineData("rules-0.3", 57, "C", 0.15)]
+    [InlineData("logreg-synthetic-0.1", 99, "A", 0.15)]
+    [InlineData("logreg-synthetic-0.1", 57, "A", 0.15)]
+    [InlineData("logreg-synthetic-0.1", 57, "C", 1.5)]
+    public async Task Incompatible_model_response_uses_the_selected_logreg_fallback(string version, int score, string grade, double pd)
+    {
+        var body = JsonSerializer.Serialize(new { model_version = version, score, risk_grade = grade, probability_of_default = pd });
+        var handler = new StubHandler((_, _) => Task.FromResult(Json(HttpStatusCode.OK, body)));
+        var request = Request();
+        var result = await CreateService(handler, modelVersion: LogRegScoringService.ModelVersion).ScoreAsync(request, CancellationToken.None);
+        var local = LogRegScoringService.Score(request);
+        result.ModelVersion.ShouldBe(LogRegScoringService.ModelVersion);
+        result.Source.ShouldBe(ScoringSource.RulesFallback);
+        result.Score.ShouldBe(local.Score);
+        result.Grade.ShouldBe(local.Grade);
+        result.ProbabilityOfDefault.ShouldBe(local.ProbabilityOfDefault);
+        result.Warnings.ShouldContain(HttpScoringService.UnavailableWarning);
+    }
+
+    [Fact]
+    public async Task Consistent_logreg_response_is_accepted()
+    {
+        var handler = new StubHandler((_, _) => Task.FromResult(Json(HttpStatusCode.OK,
+            """{"model_version":"logreg-synthetic-0.1","score":57,"risk_grade":"C","probability_of_default":0.15}""")));
+        var result = await CreateService(handler, modelVersion: LogRegScoringService.ModelVersion).ScoreAsync(Request(), CancellationToken.None);
+        result.Source.ShouldBe(ScoringSource.External);
+        result.Score.ShouldBe(57);
+        result.Grade.ShouldBe(RiskGrade.C);
+        result.ProbabilityOfDefault.ShouldBe(0.15m);
+    }
+
+    private static HttpScoringService CreateService(HttpMessageHandler handler, int retries = 0, TimeSpan? timeout = null, string modelVersion = "rules-0.3")
     {
         var client = new HttpClient(handler)
         {
@@ -247,12 +279,13 @@ public sealed class HttpScoringServiceTests
         var options = Options.Create(new ScoringOptions
         {
             Mode = ScoringMode.External,
+            ModelVersion = modelVersion,
             BaseUrl = "http://scoring.test",
             Retries = retries,
             RetryDelayMs = 0,
             TimeoutSeconds = 5,
         });
-        return new HttpScoringService(client, options, NullLogger<HttpScoringService>.Instance);
+        return new HttpScoringService(client, options, NullLogger<HttpScoringService>.Instance, new EmbeddedScoringService(options));
     }
 
     private static HttpResponseMessage Json(HttpStatusCode status, string body) => new(status)

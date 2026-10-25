@@ -17,7 +17,8 @@ namespace AlfaCredit.Infrastructure.Scoring;
 public sealed class HttpScoringService(
     HttpClient http,
     IOptions<ScoringOptions> options,
-    ILogger<HttpScoringService> logger) : IScoringService
+    ILogger<HttpScoringService> logger,
+    EmbeddedScoringService fallback) : IScoringService
 {
     public const string Endpoint = "api/v1/score";
     public const string UnavailableWarning = "external_scoring_unavailable";
@@ -50,6 +51,7 @@ public sealed class HttpScoringService(
                 {
                     var payload = await response.Content.ReadFromJsonAsync<ExternalScoringResponse>(JsonOptions, cancellationToken)
                         ?? throw new JsonException("Empty response body.");
+                    ValidateModel(payload, settings);
                     var outcome = Map(payload);
                     logger.LogInformation(
                         "Scoring service answered request {RequestId}: {Score} points, grade {Grade}, model {Model}, attempt {Attempt}",
@@ -85,13 +87,25 @@ public sealed class HttpScoringService(
             }
         }
 
-        logger.LogError("Scoring service unavailable for request {RequestId} ({Failure}), falling back to built-in rules", request.RequestId, failure);
-        var rules = RuleBasedScoringService.Score(request);
+        logger.LogError("Scoring service unavailable for request {RequestId} ({Failure}), falling back to the selected embedded model", request.RequestId, failure);
+        var rules = fallback.Score(request);
         return rules with
         {
             Source = ScoringSource.RulesFallback,
             Warnings = [.. rules.Warnings, UnavailableWarning],
         };
+    }
+
+    private void ValidateModel(ExternalScoringResponse payload, ScoringOptions settings)
+    {
+        if (settings.ModelVersion != LogRegScoringService.ModelVersion) return;
+        if (payload.ModelVersion != settings.ModelVersion)
+            throw new JsonException("External scoring model version differs from the configured fallback.");
+        if (payload.ProbabilityOfDefault is not { } pd || !double.IsFinite(pd) || pd < 0 || pd > 1)
+            throw new JsonException("Logistic regression requires a finite PD in [0,1].");
+        var expected = fallback.ScoreFromPd(pd);
+        if (payload.Score != expected || payload.RiskGrade != RiskGrades.FromScore(expected).ToString())
+            throw new JsonException("External score/grade does not match PD and the shared artifact.");
     }
 
     private static ScoringOutcome Map(ExternalScoringResponse payload)

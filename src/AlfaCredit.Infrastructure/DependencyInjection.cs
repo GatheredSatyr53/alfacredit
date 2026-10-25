@@ -67,6 +67,8 @@ public static class DependencyInjection
 
         // Скоринг: встроенные правила или внешний сервис с откатом на правила
         services.AddSingleton<RuleBasedScoringService>();
+        services.AddSingleton<EmbeddedScoringService>();
+        services.AddHostedService<ScoringModelStartupCheck>();
         var scoringMode = configuration.GetValue<ScoringMode?>($"{ScoringOptions.SectionName}:Mode") ?? ScoringMode.Rules;
         if (scoringMode == ScoringMode.External)
         {
@@ -80,7 +82,7 @@ public static class DependencyInjection
         }
         else
         {
-            services.AddSingleton<IScoringService>(provider => provider.GetRequiredService<RuleBasedScoringService>());
+            services.AddSingleton<IScoringService>(provider => provider.GetRequiredService<EmbeddedScoringService>());
         }
 
         // Сценарии и конвейер

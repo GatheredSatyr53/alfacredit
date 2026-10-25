@@ -19,6 +19,13 @@ public sealed class ScoringOptions
 
     public ScoringMode Mode { get; set; } = ScoringMode.Rules;
 
+    /// <summary>One version for remote inference and the embedded fallback. Legacy rules remain explicit.</summary>
+    [RegularExpression(@"^(rules-0\.3|logreg-synthetic-0\.1)$")]
+    public string ModelVersion { get; set; } = "rules-0.3";
+
+    /// <summary>Optional override of the bundled logreg JSON artifact.</summary>
+    public string? ArtifactPath { get; set; }
+
     /// <summary>Адрес внешнего сервиса, например http://scoring:8000.</summary>
     public string? BaseUrl { get; set; }
 
