@@ -20,6 +20,12 @@ GET {{baseUrl}}/api/products
 ### Продукт по коду
 GET {{baseUrl}}/api/products/working-capital
 
+### Каталог с предварительным платежом для суммы и срока (без токена)
+GET {{baseUrl}}/api/products?amount=1500000&termMonths=12
+
+### Предварительный платёж по одному продукту
+GET {{baseUrl}}/api/products/express?amount=1500000&termMonths=12
+
 ### Справочник статусов заявки (без токена)
 GET {{baseUrl}}/api/applications/statuses
 

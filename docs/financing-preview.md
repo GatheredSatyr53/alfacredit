@@ -595,6 +595,7 @@ sequenceDiagram
   `P = S × r / (1 − (1 + r)^−n)`, где `S` сумма, `r` = ставка / 100 / 12, `n` срок в месяцах; копейки по банковскому округлению.
 - **Сумма всех платежей и переплата**: по графику `LoanMath.Schedule` (проценты на остаток, последний платёж закрывает остаток
   ровно до нуля), поэтому цифры совпадают с `totalPayment` и `totalInterest` будущего договора при той же ставке.
+  Тот же расчёт по базовой ставке отдаёт карточка продукта (`GET /api/products?amount=&termMonths=`, поле `preliminaryPayment`).
 - **Диапазон ставки**: `interestRate` = базовая ставка продукта (грейд A, надбавка 0), `maxInterestRate` = базовая + 3 п.п.
   (грейд C, верхняя граница автоматического одобрения; шкала надбавок в `docs/decision-logic.md`).
   Грейды D и E автоматического предложения не получают, поэтому в диапазон не входят.
@@ -682,6 +683,7 @@ Preview не вызывает сервис скоринга и не меняет
 | API (версия 2) | `POST /api/financing/preview`: новые поля `calculationDate`, `notCompared[]`, `options[].suggestedAmount`, `unsuitable[].suggestedAmount`; `affordability.level` получил `InsufficientData`, `monthlyProfit`, `debtLoad`, `profitBasis` стали nullable; коды `auto_decision_possible`, `checks_automatic`, `affordability_unknown`, `limit_product`; код `credit_history_consent` удалён; овердрафт и кредитная линия вне `options` | фронт ещё не подключён, формат заявок не менялся |
 | Календарь | «сегодня» по Москве в preview, при создании заявки и в возрасте бизнеса | без миграции: хранимые даты не меняются |
 | API | `offer` в `GET /api/applications/{id}` и ответах `offer/accept`, `offer/decline`: новые поля `totalPayment`, `totalInterest` (фактические условия для карточки решения до принятия; preview их не заменяет); для срочных кредитов числа, для овердрафта и кредитной линии `null` | только добавление, без миграции: считаются из суммы, ставки и срока предложения |
+| API | `GET /api/products` и `GET /api/products/{code}`: необязательные параметры `amount` и `termMonths`, поле `preliminaryPayment` (предварительный ежемесячный платёж для карточки продукта в форме заявки; `null` без параметров), см. `api.md` | только добавление |
 
 ### Конфигурация
 

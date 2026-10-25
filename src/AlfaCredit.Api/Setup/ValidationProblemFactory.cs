@@ -61,9 +61,10 @@ internal static class ValidationProblemFactory
             return GenericBodyMessage;
         }
 
+        // Сообщения самого фреймворка ("The JSON value…", "The value 'abc' is not valid for Amount.") английские: заменяем общим
         return error.Exception is not null
             || string.IsNullOrWhiteSpace(error.ErrorMessage)
-            || error.ErrorMessage.StartsWith("The JSON", StringComparison.Ordinal)
+            || error.ErrorMessage.StartsWith("The ", StringComparison.Ordinal)
                 ? GenericFieldMessage
                 : error.ErrorMessage;
     }
